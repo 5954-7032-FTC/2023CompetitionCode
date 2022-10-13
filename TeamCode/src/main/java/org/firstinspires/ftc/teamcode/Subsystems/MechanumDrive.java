@@ -10,11 +10,10 @@ import com.qualcomm.robotcore.util.Range;
 public class MechanumDrive {
 
     DcMotor DriveM[];
-    private final double OUTPUT_SCALE_FACTOR = 1.0;
 
     /******************************************
      * Initialize with a motor array
-     * @param Motors Front -> Rear, Left -> Right in order of initialization
+     * @param Motors Define motors in CW order starting with FR
      */
     public void Initialize(DcMotor[] Motors){
         DriveM = Motors;
