@@ -2,21 +2,21 @@ package org.firstinspires.ftc.teamcode;
 
 
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-
+import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.hardware.rev.RevTouchSensor;
 import org.firstinspires.ftc.teamcode.Subsystems.*;
 import org.firstinspires.ftc.teamcode.algorithms.*;
- 
+
 @TeleOp(name = "TeleOp")
 
 public class Teleop extends LinearOpMode {
 
     final static MechanumDrive drive = new MechanumDrive();
+    final static LiftClaw lift = new LiftClaw();
     //final static LeftLift lLift = new LeftLift();
     //final static RightLift RLift = new RightLift();
     final static motorRampProfile Joy1Y = new motorRampProfile(1.5), Joy1X = new motorRampProfile(1.5), Joy2X = new motorRampProfile(1.5);
@@ -46,7 +46,7 @@ public class Teleop extends LinearOpMode {
 
 
             drive.Drive(Joy1Y.ramp(gamepad1.left_stick_y,1.5), Joy1X.ramp(gamepad1.left_stick_x, 1.5),Joy2X.ramp(gamepad1.right_stick_x, 1.5));
-
+            lift.Move((double)gamepad2.left_stick_y, (int)gamepad2.right_trigger);
 
             /*
             RLift.MoveDropper(0.7 * twoButtonConvert(gamepad2.right_bumper,gamepad2.right_trigger > 0.2));
@@ -129,6 +129,13 @@ public class Teleop extends LinearOpMode {
                 hardwareMap.dcMotor.get("D_RL"),
                 hardwareMap.dcMotor.get("D_FL")};
 
+        final DcMotor init_lift = hardwareMap.dcMotor.get("LIFT");
+        lift.Initialize(init_lift,
+                hardwareMap.get(CRServo.class, "CLAWS"),
+                hardwareMap.get(RevTouchSensor.class,"BSTOP"),
+                hardwareMap.get(RevColorSensorV3.class, "C_TOP"),
+                telemetry
+                );
         // Subsystems
         drive.Initialize(init_drive);
         /*lLift.Initialize(hardwareMap.dcMotor.get("M_LA"),
