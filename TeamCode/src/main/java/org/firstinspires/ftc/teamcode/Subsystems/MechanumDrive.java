@@ -33,7 +33,7 @@ public class MechanumDrive {
 
         double sine = Math.sin(angle-Math.PI/4);
         double cosine = Math.cos(angle-Math.PI/4);
-        double scale = ( (power + Math.abs(r)) > 1 ) ? 1/(power + r) : 1 ;
+        double scale = ( (power + Math.abs(r)) > 1 ) ? 1/(power + r) : 1/Math.sqrt(2) ;
 
         double wheelSpeeds[] = {
                 scale * (power * sine - r),
