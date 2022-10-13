@@ -43,10 +43,6 @@ public class MechanumDrive {
                 scale * (power * cosine + r)
         };
 
-
-        //normalize(wheelSpeeds);
-        //scale(wheelSpeeds, OUTPUT_SCALE_FACTOR);
-
         for (int i = 0; i < 4; i++) {
             DriveM[i].setPower(Range.clip(wheelSpeeds[i],-1,1));
         }
@@ -56,28 +52,6 @@ public class MechanumDrive {
 
     private double deadzone(double power) {
         return Math.abs(power) > 0.1 ? power : 0.0 ;
-    }
-
-    private static void scale(double wheelSpeeds[], double scaleFactor) {
-        for (double x :
-                wheelSpeeds) {
-            x *= scaleFactor;
-        }
-    }
-
-    private static void normalize(double wheelSpeeds[]) {
-        double maxMagnitude = Math.abs(wheelSpeeds[0]);
-        for (double p :
-                wheelSpeeds) {
-            maxMagnitude = Math.max(maxMagnitude, p);
-        }
-
-        if (maxMagnitude > 1.0) {
-            for (double q :
-                    wheelSpeeds) {
-                q = q / maxMagnitude;
-            }
-        }
     }
 
     public double getEncoders(){
@@ -98,74 +72,6 @@ public class MechanumDrive {
              DriveM) {
             i.setMode(SMode);
         }
-    }
-
-    /*******************
-     * Ramp Attempt
-     */
-
-    ElapsedTime rampTimer = new ElapsedTime();
-    double curPoint = 0;
-    double prevT = 0;
-    double prevSign = 0;
-    public double rampP(double input, double rampRate){
-        double curTime = rampTimer.seconds();
-        double curSign = Math.signum(input);
-        double nextPoint = (Math.abs(curPoint) + rampRate * (curTime - prevT));
-        if (prevSign != curSign && prevSign !=0){
-            curPoint = 0;
-        }
-        else if (Math.abs(input) - Math.abs(nextPoint) > 0){
-            curPoint = curSign * nextPoint;
-        }
-        else{
-            curPoint = input;
-        }
-        prevSign = curSign;
-        prevT = curTime;
-        return curPoint;
-    }
-
-    double curPoint1 = 0;
-    double prevSign1 = 0;
-    double prevT1 = 0;
-    public double rampP1(double input, double rampRate){
-        double curTime = rampTimer.seconds();
-        double curSign = Math.signum(input);
-        double nextPoint = (Math.abs(curPoint1) + rampRate * (curTime - prevT1));
-        if (prevSign1 != curSign && prevSign1 !=0){
-            curPoint1 = 0;
-        }
-        else if (Math.abs(input) - Math.abs(nextPoint) > 0){
-            curPoint1 = curSign * nextPoint;
-        }
-        else{
-            curPoint1 = input;
-        }
-        prevSign1 = curSign;
-        prevT1 = curTime;
-        return curPoint1;
-    }
-
-    double curPoint2 = 0;
-    double prevSign2 = 0;
-    double prevT2 = 0;
-    public double rampP2(double input, double rampRate){
-        double curTime = rampTimer.seconds();
-        double curSign = Math.signum(input);
-        double nextPoint = (Math.abs(curPoint2) + rampRate * (curTime - prevT2));
-        if (prevSign2 != curSign && prevSign2 !=0){
-            curPoint2 = 0;
-        }
-        else if (Math.abs(input) - Math.abs(nextPoint) > 0){
-            curPoint2 = curSign * nextPoint;
-        }
-        else{
-            curPoint2 = input;
-        }
-        prevSign2 = curSign;
-        prevT2 = curTime;
-        return curPoint2;
     }
 
 }
