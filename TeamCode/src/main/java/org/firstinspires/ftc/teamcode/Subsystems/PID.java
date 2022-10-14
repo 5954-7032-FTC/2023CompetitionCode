@@ -6,9 +6,7 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 public abstract class PID {
     private double minPowOut = 0;
-    double kP;
-    double kI;
-    double kD;
+    double kP, kI, kD;
     double setPoint;
     double curIError;
     double curDError;
