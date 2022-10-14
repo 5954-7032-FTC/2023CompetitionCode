@@ -8,8 +8,11 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.hardware.rev.RevTouchSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.teamcode.Subsystems.*;
 import org.firstinspires.ftc.teamcode.algorithms.*;
+
 
 @TeleOp(name = "TeleOp")
 
@@ -46,7 +49,7 @@ public class Teleop extends LinearOpMode {
 
 
             drive.Drive(Joy1Y.ramp(gamepad1.left_stick_y,1.5), Joy1X.ramp(gamepad1.left_stick_x, 1.5),Joy2X.ramp(gamepad1.right_stick_x, 1.5));
-            lift.Move((double)gamepad2.left_stick_y, (int)gamepad2.right_trigger);
+            lift.Move((double)gamepad2.left_stick_y, gamepad2.right_trigger);
 
             /*
             RLift.MoveDropper(0.7 * twoButtonConvert(gamepad2.right_bumper,gamepad2.right_trigger > 0.2));
@@ -122,7 +125,7 @@ public class Teleop extends LinearOpMode {
     }
 
 
-    public void Initialize(){
+    public void Initialize() {
         final DcMotor init_drive[] = {
                 hardwareMap.dcMotor.get("D_FR"),
                 hardwareMap.dcMotor.get("D_RR"),
@@ -130,10 +133,18 @@ public class Teleop extends LinearOpMode {
                 hardwareMap.dcMotor.get("D_FL")};
 
         final DcMotor init_lift = hardwareMap.dcMotor.get("LIFT");
+        final Servo servos[] = {
+                hardwareMap.servo.get("CLAW0"),
+                hardwareMap.servo.get("CLAW1")
+        };
+
+
+
+
         lift.Initialize(init_lift,
-                hardwareMap.get(CRServo.class, "CLAWS"),
-                hardwareMap.get(RevTouchSensor.class,"BSTOP"),
-                hardwareMap.get(RevColorSensorV3.class, "C_TOP"),
+                servos,
+                hardwareMap.touchSensor.get("BSTOP"),
+                hardwareMap.opticalDistanceSensor.get("C_STOP"),
                 telemetry
                 );
         // Subsystems
