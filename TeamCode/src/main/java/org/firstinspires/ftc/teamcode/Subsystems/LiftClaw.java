@@ -1,22 +1,20 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.ServoController;
 import com.qualcomm.robotcore.util.Range;
-
-import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.hardware.rev.RevTouchSensor;
-
-import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class LiftClaw {
 
     DcMotor DriveM;
-    ServoController clawServo;
-    RevTouchSensor bottomstopSensor;
-    RevColorSensorV3 releaseSensor;
+    ServoController [] clawServos;
+    TouchSensor bottomstopSensor;
+    OpticalDistanceSensor releaseSensor;
     Telemetry telemetry;
 
     final static int CLAW_OPEN=0;
@@ -42,18 +40,24 @@ public class LiftClaw {
      * Initialize with a motor array
      * @param Motor Define motors
      */
-    public void Initialize(DcMotor Motor, CRServo servo, RevTouchSensor stop, RevColorSensorV3 release, Telemetry telemetry){
+//    public void Initialize(DcMotor Motor, Telemetry telemetry){
+      public void Initialize(DcMotor Motor, Servo servos[], TouchSensor stop, OpticalDistanceSensor release, Telemetry telemetry){
         DriveM = Motor;
         DriveM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        clawServo = servo.getController();
+        clawServos = new ServoController[2];
+        for (int i=0; i<servos.length; i++) {
+            clawServos[i] = servos[i].getController();
+        }
+
         bottomstopSensor = stop;
         releaseSensor = release;
+
         this.telemetry=telemetry;
         Calibrate();
     }
 
     public void Calibrate() {
-        while ( ! bottomstopSensor.isPressed() ) {
+       /*while ( ! bottomstopSensor.isPressed() ) {
             DriveM.setPower(-1);
         }
         DriveM.setPower(0);
@@ -67,6 +71,7 @@ public class LiftClaw {
         while ( ! bottomstopSensor.isPressed() ) {
             DriveM.setPower(-0.1);
         }
+        */
         DriveM.setPower(0);
         SetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -87,10 +92,22 @@ public class LiftClaw {
         }
         return 0;
     }
+    public double Move(double move) {
+        DriveM.setPower(Range.clip(-move,-1,1));
+        /*for (int i=0; i<clawServos.length; i++) {
+            clawServos[i].setServoPosition(0, clawstate);
+        }
+*/
+        telemetry.addData("Position", (getEncoder()));
+        telemetry.update();
 
-    public double Move(double move, int clawstate) {
-        DriveM.setPower(Range.clip(move,-1,1));
-        clawServo.setServoPosition(0, clawstate);
+        return move;
+    }
+    public double Move(double move, float clawstate) {
+        DriveM.setPower(Range.clip(-move,-1,1));
+        for (int i=0; i<clawServos.length; i++) {
+            clawServos[i].setServoPosition(0, (-1^i)*clawstate);
+        }
 
         telemetry.addData("Position", (getEncoder()));
         telemetry.update();
