@@ -31,9 +31,9 @@ public class LiftClaw {
 
 
     final static int BOTTOM_POS = 0;
-    final static int LOW_POS = 100;
-    final static int MEDIUM_POS = 200;
-    final static int HIGH_POS = 300;
+    final static int LOW_POS = 3561;
+    final static int MEDIUM_POS = 5879;
+    final static int HIGH_POS = 8015;
 
 
     /******************************************
@@ -86,20 +86,25 @@ public class LiftClaw {
 
 
     public double Move(int location) {
+        double target;
         switch (location) {
             case BOTTOM:
-                DriveM.setTargetPosition(BOTTOM_POS);
+                target = BOTTOM_POS;
                 break;
             case LOW:
-                DriveM.setTargetPosition(LOW_POS);
+                target = LOW;
                 break;
             case MEDIUM:
-                DriveM.setTargetPosition(MEDIUM_POS);
+                target = MEDIUM;
                 break;
             case HIGH:
-                DriveM.setTargetPosition(HIGH_POS);
+                target = HIGH;
                 break;
         }
+        while (Math.abs(DriveM.getCurrentPosition() - target) > 30) {
+            DriveM.setPower(-1);
+        }
+        DriveM.setPower(0);
         return 0;
     }
 

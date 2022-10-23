@@ -75,6 +75,10 @@ public class Teleop extends LinearOpMode {
 
 
     public void Initialize() {
+
+        //release arm servo
+        hardwareMap.servo.get("ARM_RELEASE").setPosition(.5);
+
         final DcMotor init_drive[] = {
                 hardwareMap.dcMotor.get("D_FR"),
                 hardwareMap.dcMotor.get("D_RR"),
