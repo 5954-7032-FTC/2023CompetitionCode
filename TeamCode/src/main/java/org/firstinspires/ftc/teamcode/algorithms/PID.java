@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Subsystems;
+package org.firstinspires.ftc.teamcode.algorithms;
 
 /**
  * Created by ericw on 10/21/2017.
@@ -6,7 +6,7 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 public abstract class PID {
     private double minPowOut = 0;
-    double kP, kI, kD;
+    double kP = 0, kI = 0, kD = 0, kF = 0;
     double setPoint;
     double curIError;
     double curDError;
@@ -15,7 +15,17 @@ public abstract class PID {
     double tolerance;
     long sleepTime;
     long prevTime;
-    Thread T;
+    Thread T= new Thread(new Runnable() {
+        @Override
+        public void run() {
+            while (active){
+                error();
+                //handleOutput();
+                try {Thread.sleep(sleepTime);
+                } catch (InterruptedException e){}
+            }
+        }
+    });
     boolean active;
     boolean invertOutput = false;
     double resetvalue = 0;
@@ -33,18 +43,6 @@ public abstract class PID {
         this.kI = kI;
         this.kD = kD;
         this.sleepTime = sleepT;
-
-        T = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (active){
-                    error();
-                    try {Thread.sleep(sleepTime);
-                    } catch (InterruptedException e){}
-                }
-            }
-        });
-
     }
 
     /**********************************
@@ -62,18 +60,24 @@ public abstract class PID {
         this.sleepTime = sleepT;
         this.minPowOut = minPowOut;
 
+    }
 
-        T = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (active){
-                    error();
-                    //handleOutput();
-                    try {Thread.sleep(sleepTime);
-                    } catch (InterruptedException e){}
-                }
-            }
-        });
+    /**********************************
+     * Constructor - Set constants and sleep timer
+     * @param kP The Proportional constant, reacts linearly to error
+     * @param kI The Integral constant, calculates cumulative error of each cycle
+     * @param kD The Derivative constant, calculates the change in error of each cycle
+     * @param kF The Feedforward constant, calculates the change in error of each cycle
+     * @param sleepT How quickly the input will update the error, try to match with sensor poling
+     * @param minPowOut Minimum output of controller
+     */
+    public PID(double kP, double kI, double kD, double kF, long sleepT, double minPowOut){
+        this.kP = kP;
+        this.kI = kI;
+        this.kD = kD;
+        this.kF = kF;
+        this.sleepTime = sleepT;
+        this.minPowOut = minPowOut;
 
     }
 
@@ -155,7 +159,7 @@ public abstract class PID {
      * Getters
      */
     public double getOutput() {
-        double output = (invertOutput ? -1:1)*(kP*error + kI* curIError + kD*(error- lastError));
+        double output = (invertOutput ? -1:1)*(kP*error + kI* curIError + kD*(error- lastError) + kF * getInput());
 
         if (isInTolerance()){
             return 0;
