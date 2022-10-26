@@ -1,16 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
 
-import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.hardware.*;
 
-import org.firstinspires.ftc.teamcode.Subsystems.*;
+import org.firstinspires.ftc.teamcode.subsystems.*;
 import org.firstinspires.ftc.teamcode.algorithms.*;
 
 
@@ -22,7 +18,6 @@ public class Teleop extends LinearOpMode {
     final static LiftClaw lift = new LiftClaw();
     final static motorRampProfile Joy1Y = new motorRampProfile(1.5), Joy1X = new motorRampProfile(1.5), Joy2X = new motorRampProfile(1.5);
     int p = 0;
-
 
     int toNum(boolean in) {
         return (in ? 1 : 0);
@@ -37,25 +32,53 @@ public class Teleop extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            //movement
-            drive.Drive(Joy1Y.ramp(gamepad1.left_stick_y, 1.5), Joy1X.ramp(gamepad1.left_stick_x, 1.5), Joy2X.ramp(gamepad1.right_stick_x, 1.5));
 
-            //lift movement
-            lift.Move((double) gamepad2.left_stick_y);
+
+
+            // adjust deadzones:
+
+
+            if (gamepad1.dpad_left) {
+                drive.setZoneLateral( drive.getZoneLateral() - 0.02);
+            }
+            if (gamepad1.dpad_right) {
+                drive.setZoneLateral( drive.getZoneLateral() + 0.02);
+            }
+            if (gamepad1.dpad_up) {
+                drive.setZoneForward( drive.getZoneForward() + 0.02);
+            }
+            if (gamepad1.dpad_down) {
+                drive.setZoneForward( drive.getZoneForward() - 0.02);
+            }
+            if (gamepad1.x) {
+                drive.setZoneRotate( drive.getZoneRotate() - 0.02 );
+            }
+            if (gamepad1.b) {
+                drive.setZoneRotate( drive.getZoneRotate() + 0.02 );
+            }
+
+
+
+            //movement
+            drive.Drive(gamepad1.left_stick_y,gamepad1.left_stick_x,gamepad1.right_stick_x);
+
 
             //presets for height
             if (gamepad2.x) {
-                lift.Move(lift.BOTTOM);
+                lift.target = lift.BOTTOM_POS;
             }
             if (gamepad2.a) {
-                lift.Move(lift.LOW);
+                lift.target = lift.LOW_POS;
             }
             if (gamepad2.b) {
-                lift.Move(lift.MEDIUM);
+                lift.target = lift.MEDIUM_POS;
             }
             if (gamepad2.y) {
-                lift.Move(lift.HIGH);
+                lift.target  = lift.HIGH_POS;
             }
+
+            //lift movement
+            lift.Move((double) gamepad2.left_stick_y);
 
             //  claw control
             if (gamepad2.right_trigger > 0) {
@@ -85,7 +108,7 @@ public class Teleop extends LinearOpMode {
                 hardwareMap.dcMotor.get("D_RL"),
                 hardwareMap.dcMotor.get("D_FL")};
 
-        drive.Initialize(init_drive);
+        drive.Initialize(init_drive,telemetry);
 
         final DcMotor init_lift = hardwareMap.dcMotor.get("LIFT");
         final Servo servos[] = {

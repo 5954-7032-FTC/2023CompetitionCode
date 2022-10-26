@@ -1,9 +1,7 @@
-package org.firstinspires.ftc.teamcode.Subsystems;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-import com.qualcomm.robotcore.hardware.ServoController;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.*;
 
@@ -18,29 +16,28 @@ public class LiftClaw {
     DistanceSensor releaseSensor;
     Telemetry telemetry;
 
-    final static int CLAW_OPEN = 0;
-    final static int CLAW_CLOSE = 1;
     final static int CLAW_A = 0;
     final static int CLAW_B = 1;
 
-    final static int CALIBRATE = 0;
     public final static int BOTTOM = 1;
     public final static int LOW = 2;
     public final static int MEDIUM = 3;
     public final static int HIGH = 4;
 
 
-    final static int BOTTOM_POS = 0;
-    final static int LOW_POS = 3561;
-    final static int MEDIUM_POS = 5879;
-    final static int HIGH_POS = 8015;
+    public final static int BOTTOM_POS = 0;
+    public final static int LOW_POS = 3561;
+    public final static int MEDIUM_POS = 5879;
+    public final static int HIGH_POS = 8015;
 
+
+    Telemetry.Item _T_pos,_B_stop,_C_STAT;
 
     /******************************************
      * Initialize with a motor array
      * @param Motor Define motors
      */
-    public void Initialize(DcMotor Motor, Servo servos[], TouchSensor stop, DistanceSensor release, Telemetry telemetry) {
+    public void Initialize(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensor release, Telemetry telemetry) {
         this.telemetry = telemetry;
         DriveM = Motor;
         //DriveM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -49,12 +46,16 @@ public class LiftClaw {
             servos[i].setDirection(Servo.Direction.FORWARD);
             clawServos[i] = servos[i];
         }
+
+        _C_STAT = telemetry.addData("Claw", "open");
         ClawOpen();
         ClawClose();
         bottomstopSensor = stop;
         releaseSensor = release;
 
         Calibrate();
+        _T_pos = telemetry.addData("Lift", 0);
+        _B_stop = telemetry.addData("BSTOP",bottomstopSensor.isPressed());
     }
 
     public void Calibrate() {
@@ -77,6 +78,7 @@ public class LiftClaw {
     public void reset_zero() {
         SetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        _T_pos.setValue(getEncoder());
     }
 
 
@@ -85,30 +87,34 @@ public class LiftClaw {
     }
 
 
-    public double Move(int location) {
-        double target;
+    public double target = -1;
+
+    public double Move(int location) {  // move to a set position
         switch (location) {
             case BOTTOM:
                 target = BOTTOM_POS;
                 break;
             case LOW:
-                target = LOW;
+                target = LOW_POS;
                 break;
             case MEDIUM:
-                target = MEDIUM;
+                target = MEDIUM_POS;
                 break;
             case HIGH:
-                target = HIGH;
+                target = HIGH_POS;
                 break;
         }
-        while (Math.abs(DriveM.getCurrentPosition() - target) > 30) {
-            DriveM.setPower(-1);
-        }
+        double diff;
+        do {
+            diff=DriveM.getCurrentPosition()-target;
+            DriveM.setPower(Math.signum(diff));
+            } while (diff < 30 );
         DriveM.setPower(0);
+        target = -1;
         return 0;
     }
 
-    public double Move(double move) {
+    public double Move(double move) { // move with the joystick
         if (!bottomstopSensor.isPressed()) {
             DriveM.setPower(Range.clip(-move, -1, 1));
         } else {
@@ -119,62 +125,47 @@ public class LiftClaw {
                 DriveM.setPower(0);
             }
         }
-        telemetry.addData("Position", (getEncoder()));
-        telemetry.update();
-
+        _T_pos.setValue(getEncoder());
         return move;
     }
 
     double servopos_open = 0;
     double servopos_close = .45;
 
-    double opentime = 0.0;
+    double ClawOpenSince = 0.0;
 
-    public void checkOptical() {
+    public boolean checkOptical() {
         if (releaseSensor.getDistance(DistanceUnit.MM) < 15) {
             ClawOpen();
-            opentime = System.currentTimeMillis();
+            ClawOpenSince = System.currentTimeMillis();
+            return true;
         }
+        return false;
     }
 
     public void ClawOpen() {
         clawServos[CLAW_A].setPosition(servopos_open);
         clawServos[CLAW_B].setPosition(1 - servopos_open);
-        telemetry.addData("CLAW_A_pos", clawServos[CLAW_A].getPosition());
-        telemetry.addData("CLAW_B_pos", clawServos[CLAW_B].getPosition());
-        telemetry.update();
+        _C_STAT.setValue("open");
+    }
+
+    public void ClawCloseThreaded() {
+        clawServos[CLAW_A].setPosition(1 - servopos_close);
+        clawServos[CLAW_B].setPosition(servopos_close);
+        _C_STAT.setValue("closed");
     }
 
     public void ClawClose() {
-        if (opentime != 0) {
-            if (System.currentTimeMillis() - opentime <= 1000) {
+        if ( (ClawOpenSince != 0)   && (System.currentTimeMillis() - ClawOpenSince <= 1000)  ){
                 return;
             }
-            opentime = 0;
-        }
-        clawServos[CLAW_A].setPosition(1 - servopos_close);
-        clawServos[CLAW_B].setPosition(servopos_close);
-        telemetry.addData("CLAW_A_pos", clawServos[CLAW_A].getPosition());
-        telemetry.addData("CLAW_B_pos", clawServos[CLAW_B].getPosition());
-        telemetry.update();
+        ClawOpenSince = 0;
+        ClawCloseThreaded();
     }
 
-    private double deadzone(double power) {
-        return Math.abs(power) > 0.1 ? power : 0.0;
-    }
 
     public double getEncoder() {
         return DriveM.getCurrentPosition();
-    }
-
-    public final static double ENC_SCALE = Math.PI * 7 / (8 * 280);
-
-    public double getPosition() {
-        return getEncoder() * ENC_SCALE;
-    }
-
-    public boolean HasEncodersReset() {
-        return getEncoder() == 0;
     }
 
     public void SetMode(DcMotor.RunMode SMode) {
