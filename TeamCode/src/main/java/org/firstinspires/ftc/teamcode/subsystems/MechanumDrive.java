@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.algorithms.*;
 public class MechanumDrive {
 
     DcMotor DriveM[];
-    double _zone_lateral = 0.3;
+    double _zone_lateral = 0.1;
     double _zone_forward = 0.1;
     double _zone_rotation =0.1;
     double _ramp_rate = 1.5;
@@ -67,6 +67,9 @@ public class MechanumDrive {
     }
     public double getRampRate() { return _ramp_rate; }
 
+
+    double speed_factor=1.4;
+
     public double[] Drive(double ForwardPower, double LateralPower, double RotationalPower){
 
 
@@ -79,7 +82,7 @@ public class MechanumDrive {
 
         double sine = Math.sin(angle-Math.PI/4);
         double cosine = Math.cos(angle-Math.PI/4);
-        double scale = ( (power + Math.abs(rotate)) > 1 ) ? 1/(power + rotate) : 1/Math.sqrt(2) ;
+        double scale = ( (power + Math.abs(rotate)) > 1 ) ? speed_factor/(power + rotate) : speed_factor/Math.sqrt(2) ;
 
         double wheelSpeeds[] = {
                 scale * (power * sine - rotate),
@@ -92,10 +95,10 @@ public class MechanumDrive {
             DriveM[i].setPower(Range.clip(wheelSpeeds[i],-1,1));
         }
 
-        _T_FR.setValue(wheelSpeeds[0]);
-        _T_RR.setValue(wheelSpeeds[1]);
-        _Z_RL.setValue(wheelSpeeds[2]);
-        _T_FL.setValue(wheelSpeeds[3]);
+        _T_FR.setValue(Range.clip(wheelSpeeds[0],-1,1));
+        _T_RR.setValue(Range.clip(wheelSpeeds[1],-1,1));
+        _Z_RL.setValue(Range.clip(wheelSpeeds[2],-1,1));
+        _T_FL.setValue(Range.clip(wheelSpeeds[3],-1,1));
         return wheelSpeeds;
     }
 

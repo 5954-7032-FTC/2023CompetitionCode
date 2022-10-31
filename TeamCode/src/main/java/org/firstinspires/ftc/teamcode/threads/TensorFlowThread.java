@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode.threads;
 
-import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
@@ -14,7 +14,6 @@ import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
 
 public class TensorFlowThread extends RobotThread {
 
-    HardwareMap _hardwareMap;
     Telemetry _telemetry;
     /*
      * Specify the source for the Tensor Flow Model.
@@ -27,9 +26,9 @@ public class TensorFlowThread extends RobotThread {
     // private static final String TFOD_MODEL_FILE  = "/sdcard/FIRST/tflitemodels/CustomTeamModel.tflite";
 
     private static final String[] LABELS = {
-            "1 Bolt",
-            "2 Bulb",
-            "3 Panel"
+            "1",
+            "2",
+            "3"
     };
 
     private static final String VUFORIA_KEY = VuforiaKey.Key;
@@ -43,12 +42,28 @@ public class TensorFlowThread extends RobotThread {
      */
     private TFObjectDetector tfod;
 
-    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry) {
+    Telemetry.Item _T_image, _T_pos, _T_size, _T_count;
+    threadedAutonomousOp _top;
+    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera, threadedAutonomousOp top) {
+        TensorFlowInit(tfodmonitorid,telemetry,camera);
+        _top = top;
+    }
+
+    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera) {
+        TensorFlowInit(tfodmonitorid,telemetry,camera);
+    }
+
+    private void TensorFlowInit(int tfodmonitorid, Telemetry telemetry, WebcamName camera) {
         this._telemetry = telemetry;
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
-        initVuforia();
+        initVuforia(camera);
         initTfod(tfodmonitorid);
+
+        _T_count = _telemetry.addData("Count", 0);
+        _T_image = _telemetry.addData("Image", 0);
+        _T_pos = _telemetry.addData("- Position (Row/Col)", 0);
+        _T_size =_telemetry.addData("- Size (Width/Height)", 0);
 
         /*
          * Activate TensorFlow Object Detection before we wait for the start command.
@@ -63,7 +78,7 @@ public class TensorFlowThread extends RobotThread {
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
-            tfod.setZoom(1.0, 16.0/9.0);
+            tfod.setZoom(1.8, 16.0/9.0);
         }
     }
 
@@ -75,7 +90,7 @@ public class TensorFlowThread extends RobotThread {
                 // the last time that call was made.
                 List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
                 if (updatedRecognitions != null) {
-                    _telemetry.addData("# Objects Detected", updatedRecognitions.size());
+                    _T_count.setValue( updatedRecognitions.size());
 
                     // step through the list of recognitions and display image position/size information for each one
                     // Note: "Image number" refers to the randomized image orientation/number
@@ -85,26 +100,39 @@ public class TensorFlowThread extends RobotThread {
                         double width = Math.abs(recognition.getRight() - recognition.getLeft());
                         double height = Math.abs(recognition.getTop() - recognition.getBottom());
 
-                        _telemetry.addData("", " ");
-                        _telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
-                        _telemetry.addData("- Position (Row/Col)", "%.0f / %.0f", row, col);
-                        _telemetry.addData("- Size (Width/Height)", "%.0f / %.0f", width, height);
+
+                        _T_image.setValue( "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
+                        _T_pos.setValue( "%.0f / %.0f", row, col);
+                        _T_size.setValue( "%.0f / %.0f", width, height);
+                        if (recognition.getConfidence() > 0.80) {
+                            this.shutdown(recognition.getLabel());
+                            break;
+                        }
                     }
-                    _telemetry.update();
+                    //_telemetry.update();
                 }
             }
         }
     }
 
+    public void shutdown(String s) {
+        tfod.shutdown();
+        vuforia.close();
+        _top.setWhereToEnd(s);
+        this.cancel();
+    }
+
     /**
      * Initialize the Vuforia localization engine.
      */
-    private void initVuforia() {
+    private void initVuforia(WebcamName cameraName) {
         /*
          * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
          */
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
+        parameters.cameraName = cameraName;
+//        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 
@@ -116,12 +144,18 @@ public class TensorFlowThread extends RobotThread {
      * Initialize the TensorFlow Object Detection engine.
      */
     private void initTfod(int monitorId) {
-        int tfodMonitorViewId = monitorId;
-        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        TFObjectDetector.Parameters tfodParameters;
+        if (monitorId < 0) {
+            tfodParameters = new TFObjectDetector.Parameters();
+        }
+        else {
+            tfodParameters = new TFObjectDetector.Parameters(monitorId);
+        }
         tfodParameters.minResultConfidence = 0.75f;
         tfodParameters.isModelTensorFlow2 = true;
         tfodParameters.inputSize = 300;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+
 
         // Use loadModelFromAsset() if the TF Model is built in as an asset by Android Studio
         // Use loadModelFromFile() if you have downloaded a custom team model to the Robot Controller's FLASH.
