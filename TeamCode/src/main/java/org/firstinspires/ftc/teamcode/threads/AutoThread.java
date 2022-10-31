@@ -4,23 +4,64 @@ import java.util.ArrayList;
 
 
 public class AutoThread extends RobotThread {
-    boolean _isLeft = true;
-    public AutoThread(boolean isLeft) {
+    boolean _isLeft;
+    MovementThread _move;
+    LiftClawThread _liftClaw;
+    VuforiaFieldNavigationWebcamThread _vuforia;
+    public AutoThread(boolean isLeft, MovementThread move, LiftClawThread liftClaw, VuforiaFieldNavigationWebcamThread vuforia) {
         _isLeft = isLeft;
+        _move = move;
+        _liftClaw = liftClaw;
+        _vuforia = vuforia;
     }
 
-    class Tasks {
+    interface Task {
+        void finishTask();
     }
 
+    class MoveTask extends Thread implements Task {
+        FieldPosition _pos;
+        public MoveTask(FieldPosition pos) {
+            this._pos = pos;
+        }
+        public void run() {
+            _move.DriveTo(_pos);
+            finishTask();
+        }
+        @Override
+        public void finishTask() {
+        }
+    }
 
+    class LiftTask extends Thread implements  Task {
+        int _pos;
+        public LiftTask(int pos) {
+            this._pos = pos;
+        }
+        public void run() {
+            _liftClaw.runToPos(_pos);
+            finishTask();
+        }
+        @Override
+        public void finishTask() {
+        }
+    }
 
-
-    public static ArrayList<Tasks> taskList;
+    public static ArrayList<Task> taskList;
 
     public void run() {
-        taskList = new ArrayList<Tasks>(20);
+        taskList = new ArrayList<Task>(20);
 
-        taskList.add( new Tasks());
+        taskList.add( new Task() {
+            public void finishTask() {
+                setTaskDone();
+            }
+
+            @Override
+            public void finishTask() {
+
+            }
+        });
 
         while (!isCancelled()) {
             //do tasks in order
@@ -28,6 +69,7 @@ public class AutoThread extends RobotThread {
             /*
             Let's list the tasks....
             1. find the parking spot
+            2. rotate 90 (ccw if left, cw if right)
             2. raise the arm
             3. move to medium post
             4. place first cone
@@ -37,6 +79,7 @@ public class AutoThread extends RobotThread {
                 7. move to post
                 8 place on post
             9. move to parking spot
+            10. exit
             */
         }
     }

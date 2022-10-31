@@ -129,16 +129,7 @@ public class threadedAutonomousOp extends OpMode {
         /*
         Things to do:
         1. find where to park for later.
-        2. find my location
-        3. determine proper color and pattern
-            blue:
-                left:
-
-            blue:
-                right:
-                    1. turn right 90 degrees, move forward 1 unit drop cone
-                    2. raise claw, turn left 90 degrees, move forward 2 units, turn right, move forward 1/2 unit, drop lift, raise lift, reverse 1 unit, turn left 90 degrees, move forward 1/2 unit, lower lift to ground, release cone, lift claw.
-                    3. raise claw, reverse 1/2 unit, turn right 90, forward 1/2, lower lift to cone, lift claw, reverse 1/2
+        2. will make a right vs left auto app picker.....makes it easy.
 
          */
 
