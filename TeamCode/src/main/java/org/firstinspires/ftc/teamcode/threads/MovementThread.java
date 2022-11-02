@@ -143,6 +143,117 @@ public class MovementThread extends RobotThread {
     }
 
 
+    static int DIR_FOR = 0;
+    static int DIR_REV = 1;
+    static int DIR_RIGHT = 2;
+    static int DIR_LEFT = 3;
+    static int DIR_CW = 4;
+    static int DIR_CCW = 5;
+
+    private double wheelSpeeds_auto [] [] = {
+            {  //forward
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            },
+            {  //backward
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0
+            },
+            {   // slide right
+                -1.0,
+                1.0,
+                -1.0,
+                1.0
+            },
+            {  //slide left
+                1.0,
+                -1.0,
+                1.0,
+                -1.0
+            },
+            {  // turn CW
+                -1.0,
+                -1.0,
+                1.0,
+                1.0
+            },
+            { //turn CCW
+                1.0,
+                1.0,
+                -1.0,
+                -1.0
+            }
+    };
+
+
+
+    public void dir_move(int DIR, int ticks) {
+        //all 4 wheels move a specified distance.
+        _DriveMotors[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        _DriveMotors[0].setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        _DriveMotors[0].setTargetPosition( (int)Math.floor(ticks));
+        _DriveMotors[0].setPower(wheelSpeeds_auto[DIR][0]*_power_factor);
+
+        for (int i = 1; i < 4; i++) {
+            _DriveMotors[i].setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            _DriveMotors[i].setPower(wheelSpeeds_auto[DIR][i]*_power_factor);
+        }
+        while (true) {
+            if (!_DriveMotors[0].isBusy()) break;
+        }
+        for (int i = 0; i < 4; i++) {
+            _DriveMotors[i].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            _DriveMotors[i].setPower(0);
+        }
+    }
+
+
+    final double _power_factor=1.0;
+    final int _ticks_per_motor_rev = 1120;
+
+    //measurements from robot
+    final double _motor_gear_size = 4.0; // inches
+    final double _wheel_gear_size = 2.0; //inches
+    final double _wheel_diameter = 4.0; // inches
+    final double _robot_diameter = 16.0; // inches
+
+    double _gear_ratio = _motor_gear_size/_wheel_gear_size;
+    double _wheel_circumference = Math.PI * _wheel_diameter;
+
+    double _distance_per_encoder_tick = _wheel_circumference * (_gear_ratio / _ticks_per_motor_rev ); // inches
+
+    int _ticks_per_tile = (int)Math.floor(24/_distance_per_encoder_tick);
+
+    double _robot_circumference = 2 * _robot_diameter * Math.PI; // in inches
+
+    int _ticks_per_90degrees = (int)Math.floor((90/360) * (_robot_circumference / _distance_per_encoder_tick));  // number of ticks to go 90 degree
+
+    public void MoveForward(double tiles ) {
+        dir_move(DIR_FOR, (int) Math.floor(tiles * _ticks_per_tile));
+    }
+    public void MoveBackward(double tiles ) {
+        dir_move(DIR_REV, -(int) Math.floor(tiles * _ticks_per_tile));
+    }
+    public void SlideLeft(double tiles ) {
+        dir_move(DIR_LEFT, (int) Math.floor(tiles * _ticks_per_tile));
+    }
+    public void SlideRight(double tiles ) {
+        dir_move(DIR_RIGHT, -(int) Math.floor(tiles * _ticks_per_tile));
+    }
+
+    public void Rotate90CW(){
+        dir_move(DIR_CW, -_ticks_per_90degrees);
+    }
+
+    public void Rotate90CCW(){
+        dir_move(DIR_CCW, _ticks_per_90degrees);
+    }
+
+
     public void Drive(double ForwardPower, double LateralPower, double RotationalPower){
         double lateral = _Joy1X.ramp(deadzone(LateralPower,_zone_lateral));
         double forward = _Joy1Y.ramp(deadzone(ForwardPower,_zone_forward));

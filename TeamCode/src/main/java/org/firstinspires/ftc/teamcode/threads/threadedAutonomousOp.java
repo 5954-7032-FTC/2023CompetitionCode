@@ -2,36 +2,32 @@ package org.firstinspires.ftc.teamcode.threads;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.field.Point;
-
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import java.nio.charset.StandardCharsets;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 
 
 //threaded tele op controller......
-@Autonomous(name = "AutonomousOp")
-public class threadedAutonomousOp extends OpMode {
+
+abstract public class threadedAutonomousOp extends OpMode {
 
     MovementThread _move;
     LiftClawThread _liftclaw;
     TensorFlowThread _tensorFlow;
     VuforiaFieldNavigationWebcamThread _vuforia;
 
-    AutoThread _myauto;
+    //AutoThread _myauto;
     Telemetry.Item _threadCount;
     Telemetry.Item _whereToEnd;
 
     Servo _arm_release;
 
+    boolean doneAuto=false;
     @Override
     public void init() {
         telemetry.setAutoClear(false);
@@ -77,7 +73,6 @@ public class threadedAutonomousOp extends OpMode {
         _tensorFlow = new TensorFlowThread( tfodMonitorViewId, telemetry,camera,this);
 
 
-        /*
         int cmvid = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         WebcamName webcam = hardwareMap.get(WebcamName.class, "Webcam 1");
         _vuforia = new VuforiaFieldNavigationWebcamThread(
@@ -85,12 +80,12 @@ public class threadedAutonomousOp extends OpMode {
                 telemetry,
                 cmvid
         );
-*/
+
         _whereToEnd.addData("Where?","nope");
         AutoTransitioner.transitionOnStop(this, "TeleOp");
         mytime = new ElapsedTime();
 
-        _myauto = new AutoThread(true, _move, _liftclaw,_vuforia);
+        //_myauto = new AutoThread(true, _move, _liftclaw,_vuforia);
 
     }
 
@@ -113,58 +108,18 @@ public class threadedAutonomousOp extends OpMode {
                 _arm_release.setPosition(.5);
             }
         }.start();
+        _liftclaw.Calibrate();
 
         _move.start();
         _liftclaw.start();
         _tensorFlow.start();
 
-        _liftclaw.Calibrate();
-        _myauto.start();
-
-    }
 
 
-    @Override
-    public void loop() {
-        /*
-        Things to do:
-        1. find where to park for later.
-        2. will make a right vs left auto app picker.....makes it easy.
-
-         */
-
-        if (mytime.seconds() >=30 ) this.stop(); // this may be unnecessary
-
-        if ( _whereToEnd_value == 0 && mytime.seconds()>2) {
-            setWhereToEnd(null);
-        }
-
-        if (mytime.seconds() >=24) {
-            // move to final location X, Y to be determined
-            Point [] final_spots = {
-                    new Point(0,0),
-                    new Point(1,0);
-                    new Point(2,0);
-            }
-            _myauto.cancel();
-        }
-
-        if (_whereToEnd_value != 0 ) {
-            int cmvid = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-            WebcamName webcam = hardwareMap.get(WebcamName.class, "Webcam 1");
-            _vuforia = new VuforiaFieldNavigationWebcamThread(
-                    webcam,
-                    telemetry,
-                    cmvid
-            );
-            _vuforia.start();
-
-        }
-
-        // do the autonomous things
 
 
     }
+
 
     @Override
     public void stop() {
