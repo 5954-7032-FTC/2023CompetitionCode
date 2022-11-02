@@ -33,6 +33,8 @@ public class LiftClawThread extends RobotThread {
 
 
 
+
+
     // static points
     final static int CLAW_A = 0;
     final static int CLAW_B = 1;
@@ -149,6 +151,16 @@ public class LiftClawThread extends RobotThread {
         _DriveMotor.setPower(0);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+    }
+
+    public void placeCone() {
+        _DriveMotor.setPower(-1);
+        while (true) {
+            if (checkOptical()) break;
+            if (_DriveMotor.getCurrentPosition() < 100  || _DriveMotor.getCurrentPosition() > 5300) break;
+
+        }
+        _DriveMotor.setPower(0);
     }
 
     public void run() {
