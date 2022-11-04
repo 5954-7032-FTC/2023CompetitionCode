@@ -14,7 +14,8 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 
 //threaded tele op controller......
 
-abstract public class threadedAutonomousOp extends OpMode {
+ abstract public class threadedAutonomousOp extends OpMode {
+
 
     MovementThread _move;
     LiftClawThread _liftclaw;
@@ -61,7 +62,8 @@ abstract public class threadedAutonomousOp extends OpMode {
                 bottom_stop,
                 post_sensor,
                 telemetry,
-                gpe
+                gpe,
+                _move
                 );
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
@@ -70,9 +72,10 @@ abstract public class threadedAutonomousOp extends OpMode {
         WebcamName camera =  hardwareMap.get(WebcamName.class, "Webcam 1");
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        _tensorFlow = new TensorFlowThread( tfodMonitorViewId, telemetry,camera,this);
+      //  _tensorFlow = new TensorFlowThread( tfodMonitorViewId, telemetry,camera,this);
 
-
+      //  _tensorFlow.start();
+/*
         int cmvid = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         WebcamName webcam = hardwareMap.get(WebcamName.class, "Webcam 1");
         _vuforia = new VuforiaFieldNavigationWebcamThread(
@@ -80,12 +83,12 @@ abstract public class threadedAutonomousOp extends OpMode {
                 telemetry,
                 cmvid
         );
+        */
 
-        _whereToEnd.addData("Where?","nope");
+        _whereToEnd = telemetry.addData("Where?","nope");
         AutoTransitioner.transitionOnStop(this, "TeleOp");
         mytime = new ElapsedTime();
 
-        //_myauto = new AutoThread(true, _move, _liftclaw,_vuforia);
 
     }
 
@@ -95,28 +98,17 @@ abstract public class threadedAutonomousOp extends OpMode {
     public void start() {
         mytime.reset();
         _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                _arm_release.setPosition(0);
-                try {
-                    Thread.sleep(6000);
-                }
-                catch (Exception ignored) {
-                }
-                _arm_release.setPosition(.5);
-            }
-        }.start();
+
         _liftclaw.Calibrate();
 
-        _move.start();
-        _liftclaw.start();
-        _tensorFlow.start();
+    //    _move.start();
+    //    _liftclaw.start();
+//        _tensorFlow.start();
 
 
 
 
+        //this.onStart();
 
     }
 
@@ -138,5 +130,14 @@ abstract public class threadedAutonomousOp extends OpMode {
         }
         _whereToEnd.setValue(_whereToEnd_value);
         _tensorFlow.cancel();
+        /*
+        int cmvid = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        WebcamName webcam = hardwareMap.get(WebcamName.class, "Webcam 1");
+        _vuforia = new VuforiaFieldNavigationWebcamThread(
+                webcam,
+                telemetry,
+                cmvid
+        );
+         */
     }
  }
