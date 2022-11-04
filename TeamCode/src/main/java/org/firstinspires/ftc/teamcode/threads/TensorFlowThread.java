@@ -10,6 +10,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.util.List;
 
+import org.firstinspires.ftc.teamcode.RobotAutoDriveByGyro_Linear;
 import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
 
 public class TensorFlowThread extends RobotThread {
@@ -43,8 +44,8 @@ public class TensorFlowThread extends RobotThread {
     private TFObjectDetector tfod;
 
     Telemetry.Item _T_image, _T_pos, _T_size, _T_count;
-    threadedAutonomousOp _top;
-    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera, threadedAutonomousOp top) {
+    RobotAutoDriveByGyro_Linear _top;
+    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera, RobotAutoDriveByGyro_Linear top) {
         TensorFlowInit(tfodmonitorid,telemetry,camera);
         _top = top;
     }
@@ -78,7 +79,7 @@ public class TensorFlowThread extends RobotThread {
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
-            tfod.setZoom(1.8, 16.0/9.0);
+            tfod.setZoom(1.0, 16.0/9.0);
         }
     }
 
@@ -104,6 +105,7 @@ public class TensorFlowThread extends RobotThread {
                         _T_image.setValue( "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
                         _T_pos.setValue( "%.0f / %.0f", row, col);
                         _T_size.setValue( "%.0f / %.0f", width, height);
+                        _telemetry.update();
                         if (recognition.getConfidence() > 0.80) {
                             this.shutdown(recognition.getLabel());
                             break;
@@ -120,6 +122,9 @@ public class TensorFlowThread extends RobotThread {
         vuforia.close();
         _top.setWhereToEnd(s);
         this.cancel();
+        vuforia=null;
+        tfod=null;
+
     }
 
     /**

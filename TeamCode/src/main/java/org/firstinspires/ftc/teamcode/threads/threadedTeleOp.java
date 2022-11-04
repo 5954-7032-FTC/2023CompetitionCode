@@ -15,6 +15,7 @@ public class threadedTeleOp extends OpMode {
     LiftClawThread _liftclaw;
 
     Telemetry.Item _threadCount;
+    Servo _arm_release;
 
     @Override
     public void init() {
@@ -46,10 +47,13 @@ public class threadedTeleOp extends OpMode {
                 bottom_stop,
                 post_sensor,
                 telemetry,
-                gamepad2
+                gamepad2,
+                _move
                 );
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
+
+        _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
     }
 
     @Override
@@ -63,6 +67,12 @@ public class threadedTeleOp extends OpMode {
     public void loop() {
         _threadCount.setValue(Thread.activeCount());
         telemetry.update();
+        if (gamepad1.left_bumper) {
+            _arm_release.setPosition(0.4);
+        }
+        if (gamepad1.right_bumper) {
+            _arm_release.setPosition(0.7);
+        }
     }
 
     @Override

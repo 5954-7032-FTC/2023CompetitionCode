@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.threads;
 
 import com.qualcomm.robotcore.hardware.*;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -15,10 +16,11 @@ public class MovementThread extends RobotThread {
     double _zone_forward = 0.1;
     double _zone_rotation =0.1;
     double _ramp_rate = 1.5;
+    boolean _is_auto = false;
 
     DcMotor [] _DriveMotors;
     motorRampProfile _Joy1X, _Joy1Y, _Joy2X;
-    Telemetry.Item _T_FR, _T_RR, _T_FL, _Z_RL,_ZL,_ZF,_ZR, _RR;
+    Telemetry.Item _T_FR, _T_RR, _T_FL, _Z_RL,_ZL,_ZF,_ZR, _RR,_T_RUNTO,_T_CURR;
 
     public MovementThread(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry) {
         this._gamepad = gamepad;
@@ -36,6 +38,9 @@ public class MovementThread extends RobotThread {
         _T_RR = telemetry.addData("RR", 0);
         _T_FL = telemetry.addData("FL", 0);
         _Z_RL = telemetry.addData("RL", 0);
+
+        _T_RUNTO = telemetry.addData("RunTo", 0);
+        _T_CURR = telemetry.addData("Curr", 0);
         /*
         _ZL = telemetry.addData("ZL", _zone_lateral);
         _ZF = telemetry.addData("ZF", _zone_forward);
@@ -79,7 +84,7 @@ public class MovementThread extends RobotThread {
             }
 
          */
-            Drive(_gamepad.left_stick_y,_gamepad.left_stick_x,_gamepad.right_stick_x);
+           if (! _is_auto) Drive(_gamepad.left_stick_y, _gamepad.left_stick_x, _gamepad.right_stick_x);
         }
     }
 
@@ -191,52 +196,72 @@ public class MovementThread extends RobotThread {
 
 
 
-    public void dir_move(int DIR, int ticks) {
-        //all 4 wheels move a specified distance.
-        _DriveMotors[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        _DriveMotors[0].setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        _DriveMotors[0].setTargetPosition( (int)Math.floor(ticks));
-        _DriveMotors[0].setPower(wheelSpeeds_auto[DIR][0]*_power_factor);
 
+
+    public void dir_move(int DIR, int ticks) {
+        _T_RUNTO.setValue(ticks);
+
+        _DriveMotors[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        _DriveMotors[0].setTargetPosition(ticks);
+        _DriveMotors[0].setMode(DcMotor.RunMode.RUN_TO_POSITION);
         for (int i = 1; i < 4; i++) {
             _DriveMotors[i].setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            _DriveMotors[i].setPower(wheelSpeeds_auto[DIR][i]*_power_factor);
         }
-        while (true) {
-            if (!_DriveMotors[0].isBusy()) break;
+
+        _DriveMotors[0].setPower( wheelSpeeds_auto[DIR][0] * 1 );
+        _DriveMotors[3].setPower( wheelSpeeds_auto[DIR][3] * 1 );
+        _DriveMotors[2].setPower( wheelSpeeds_auto[DIR][2] * 1 );
+        _DriveMotors[1].setPower( wheelSpeeds_auto[DIR][1] * 1 );
+        while (  _DriveMotors[0].isBusy()) {
+            _T_CURR.setValue( _DriveMotors[0].getCurrentPosition());
         }
-        for (int i = 0; i < 4; i++) {
+
+       _DriveMotors[0].setPower(0);
+       _DriveMotors[3].setPower(0);
+       _DriveMotors[2].setPower(0);
+       _DriveMotors[1].setPower(0);
+       for (int i = 0; i < 4; i++) {
             _DriveMotors[i].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            _DriveMotors[i].setPower(0);
         }
     }
 
 
-    final double _power_factor=1.0;
     final int _ticks_per_motor_rev = 1120;
 
     //measurements from robot
-    final double _motor_gear_size = 4.0; // inches
+    final double _motor_gear_size = 3.0; // inches
     final double _wheel_gear_size = 2.0; //inches
-    final double _wheel_diameter = 4.0; // inches
-    final double _robot_diameter = 16.0; // inches
+    final double _wheel_diameter = 96/25.4; // inches
+    final double _robot_diameter = 14.5; // inches
 
     double _gear_ratio = _motor_gear_size/_wheel_gear_size;
     double _wheel_circumference = Math.PI * _wheel_diameter;
 
     double _distance_per_encoder_tick = _wheel_circumference * (_gear_ratio / _ticks_per_motor_rev ); // inches
 
-    int _ticks_per_tile = (int)Math.floor(24/_distance_per_encoder_tick);
+    int _ticks_per_tile = (int)Math.floor(24/_distance_per_encoder_tick*0.7);
 
     double _robot_circumference = 2 * _robot_diameter * Math.PI; // in inches
 
     int _ticks_per_90degrees = (int)Math.floor((90/360) * (_robot_circumference / _distance_per_encoder_tick));  // number of ticks to go 90 degree
 
+    int _motor_rpm = 160;
+    double _motor_rps = _motor_rpm/60;
+
+    int _ticks_per_second = (int)Math.floor(_motor_rps * _ticks_per_motor_rev);
+
+    double _seconds_per_tile = _ticks_per_second / _ticks_per_tile;
+
+    double _seconds_per_tick =1/(double)_ticks_per_second;
+
+
     public void MoveForward(double tiles ) {
         dir_move(DIR_FOR, (int) Math.floor(tiles * _ticks_per_tile));
     }
     public void MoveBackward(double tiles ) {
+        this._is_auto = true;
         dir_move(DIR_REV, -(int) Math.floor(tiles * _ticks_per_tile));
+        this._is_auto = false;
     }
     public void SlideLeft(double tiles ) {
         dir_move(DIR_LEFT, (int) Math.floor(tiles * _ticks_per_tile));

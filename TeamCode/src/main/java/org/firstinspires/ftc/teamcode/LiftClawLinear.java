@@ -1,18 +1,23 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.hardware.*;
-import com.qualcomm.robotcore.util.*;
-import org.firstinspires.ftc.robotcore.external.*;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.threads.MovementThread;
+import org.firstinspires.ftc.teamcode.threads.RobotThread;
 
-public class LiftClawThread extends RobotThread {
-    private final Gamepad _gamepad;
+public class LiftClawLinear {
 
 
     //constants
     final static double _servo_pos_open = 0;
     final static double _servo_pos_close = .45;
-    final static double _servo_pos_nut = 0.15;
     final static int BOTTOM_POS = 0;   //1120 ticks per revolution
     final static int LOW_POS = 2300;
     final static int MEDIUM_POS = 3600;
@@ -51,16 +56,16 @@ public class LiftClawThread extends RobotThread {
     //telemetry items
     Telemetry.Item _T_pos,_B_stop,_C_STAT;
 
-    MovementThread _move;
 
 
-    public LiftClawThread(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensor release,
-                          Telemetry telemetry, Gamepad gamepad, MovementThread move) {
-        _gamepad=gamepad;
+
+    public LiftClawLinear(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensor release,
+                          Telemetry telemetry) {
+
         _telemetry = telemetry;
         _DriveMotor = Motor;
         _clawServos = new Servo[2];
-        _move = move;
+
         for (int i = 0; i < servos.length; i++) {
             servos[i].setDirection(Servo.Direction.FORWARD);
             _clawServos[i] = servos[i];
@@ -80,7 +85,7 @@ public class LiftClawThread extends RobotThread {
 
     public void ClawOpen() {
         _clawServos[CLAW_A].setPosition(_servo_pos_open);
-        _clawServos[CLAW_B].setPosition(1-_servo_pos_open);
+        _clawServos[CLAW_B].setPosition(1 - _servo_pos_open);
         _C_STAT.setValue("open");
     }
 
@@ -93,12 +98,6 @@ public class LiftClawThread extends RobotThread {
         }
     }
 
-    public void ClawClose(double amt) {
-            _clawServos[CLAW_A].setPosition(1 - amt);
-            _clawServos[CLAW_B].setPosition(amt);
-            _C_STAT.setValue("closedNUT");
-    }
-
     public int getEncoder() {
         return _DriveMotor.getCurrentPosition();
     }
@@ -107,19 +106,6 @@ public class LiftClawThread extends RobotThread {
         _DriveMotor.setMode(SMode);
     }
 
-    public void Move(double move) { // move with the joystick
-        if (!_bottomStopSensor.isPressed()) {
-            _DriveMotor.setPower(Range.clip(-move, -1, 1));
-        } else {
-            reset_zero();
-            if (-move > 0) {
-                _DriveMotor.setPower(Range.clip(-move, -1, 1));
-            } else {
-                _DriveMotor.setPower(0);
-            }
-        }
-        _T_pos.setValue(getEncoder());
-    }
 
     public void Calibrate() {
 
@@ -155,7 +141,7 @@ public class LiftClawThread extends RobotThread {
             if (current == last) break;
             last = current;
             if (!_DriveMotor.isBusy()) break;
-            if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
+            //if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
         }
         _DriveMotor.setPower(0);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -163,53 +149,12 @@ public class LiftClawThread extends RobotThread {
     }
 
     public void placeCone() {
-        _DriveMotor.setPower(-1);
         while (true) {
-            if (checkOptical()) break;
-            if (_DriveMotor.getCurrentPosition() < 100  || _DriveMotor.getCurrentPosition() > 5300) break;
-
-        }
-        _DriveMotor.setPower(0);
-    }
-    boolean _is_auto = false;
-    public void run() {
-        Calibrate();
-        while (!isCancelled()) {
-            //lift movement
             if (checkOptical()) {
                 _clawOpenTime = System.currentTimeMillis();
                 ClawOpen();
             }
-            if (_is_auto) continue;
 
-            Move((double) _gamepad.left_stick_y);
-            //  claw control
-            if (_gamepad.left_trigger >0) {
-                ClawClose(_servo_pos_nut);
-            }
-            else {
-                if (_gamepad.right_trigger > 0) {
-                    ClawOpen();
-                } else {
-                    ClawClose();
-                }
-            }
-
-
-
-
-            if (_gamepad.x) {
-                runToPos(BOTTOM_POS);
-            }
-            if (_gamepad.a) {
-                runToPos(LOW_POS);
-            }
-            if (_gamepad.b) {
-                runToPos(MEDIUM_POS);
-            }
-            if (_gamepad.y) {
-                runToPos(HIGH_POS);
-            }
         }
     }
 }
