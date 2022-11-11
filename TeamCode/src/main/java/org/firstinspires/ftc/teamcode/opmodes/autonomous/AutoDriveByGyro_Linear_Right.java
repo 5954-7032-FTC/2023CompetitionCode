@@ -27,30 +27,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.tfod.Tfod;
-import org.firstinspires.ftc.teamcode.threads.AutoTransitioner;
-import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
-import org.firstinspires.ftc.teamcode.threads.MovementThread;
-import org.firstinspires.ftc.teamcode.threads.TensorFlowThread;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.teamcode.hardware.LiftClawLinear;
+import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
+import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
+
+import java.util.List;
 
 /**
  *  This file illustrates the concept of driving an autonomous path based on Gyro heading and encoder counts.
@@ -99,8 +103,8 @@ import org.firstinspires.ftc.teamcode.threads.TensorFlowThread;
  *  Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name = "GyroTest")
-public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
+@Autonomous(name = "RightAutoBetter", group = "Test")
+public class AutoDriveByGyro_Linear_Right extends LinearOpMode {
 
     /* Declare OpMode members. */
 
@@ -134,8 +138,8 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
 
     // These constants define the desired driving/control characteristics
     // They can/should be tweaked to suit the specific robot drive train.
-    static final double     DRIVE_SPEED             = 0.2;     // Max driving speed for better distance accuracy.
-    static final double     TURN_SPEED              = 0.15;     // Max Turn speed to limit turn rate
+    static final double     DRIVE_SPEED             = 0.4;     // Max driving speed for better distance accuracy.
+    static final double     TURN_SPEED              = 0.2;     // Max Turn speed to limit turn rate
     static final double     HEADING_THRESHOLD       = 0.5 ;    // How close must the heading get to the target before moving to next step.
                                                                // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     // Define the Proportional control coefficient (or GAIN) for "heading control".
@@ -145,30 +149,30 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
     static final double     P_TURN_GAIN            = 0.02;     // Larger is more responsive, but also less stable
     static final double     P_DRIVE_GAIN           = 0.02;     // Larger is more responsive, but also less stable
 
-    LiftClawThread _liftClaw;
 
-    TensorFlowThread _tensorFlow;
-    LinearMovement _move;
     LiftClawLinear _liftclaw;
     Servo _arm_release;
 
-    final public static int LEFT=-1;
-    final public static int RIGHT=1;
 
+    DcMotor [] motors;
     @Override
     public void runOpMode() {
 
         // set up MovementThread
-        final DcMotor [] motors = {
-                hardwareMap.dcMotor.get("D_FR"),
-                hardwareMap.dcMotor.get("D_RR"),
-                hardwareMap.dcMotor.get("D_RL"),
-                hardwareMap.dcMotor.get("D_FL")};
 
-        _move = new LinearMovement(motors,telemetry);
+        motors = new DcMotor[4];
+        motors[0]=hardwareMap.dcMotor.get("D_FR");
+        motors[1]=hardwareMap.dcMotor.get("D_RR");
+        motors[2]=hardwareMap.dcMotor.get("D_RL");
+        motors[3]=hardwareMap.dcMotor.get("D_FL");
+
+        motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
+        motors[3].setDirection(DcMotorSimple.Direction.REVERSE);
+
+        //_move = new LinearMovement(motors,telemetry);
 
 
-        // setup LiftClaw
+        // setup LiftClawOld
         final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
         final Servo[] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
@@ -192,9 +196,8 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         WebcamName camera =  hardwareMap.get(WebcamName.class, "Webcam 1");
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        _tensorFlow = new TensorFlowThread( tfodMonitorViewId, telemetry,camera,this);
+        TensorFlowInit(tfodMonitorViewId,telemetry,camera);
 
-        _tensorFlow.start();
 
         // Initialize the drive system variables.
         //leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
@@ -213,16 +216,32 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         imu.initialize(parameters);
 
         // Ensure the robot is stationary.  Reset the encoders and set the motors to BRAKE mode
-        _move.leftsetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        _move.rightsetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        _move.leftsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        _move.rightsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftsetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightsetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         AutoTransitioner.transitionOnStop(this, "TeleOp");
+        double maxConfidence=-1;
+        String maxLabel = null;
 
         // Wait for the game to start (Display Gyro value while waiting)
         while (opModeInInit()) {
             Orientation angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+/*            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            if (updatedRecognitions != null) {
+                //_T_count.setValue( updatedRecognitions.size());
 
+                // step through the list of recognitions and display image position/size information for each one
+                // Note: "Image number" refers to the randomized image orientation/number
+                for (Recognition recognition : updatedRecognitions) {
+                    if (recognition.getConfidence() > maxConfidence) {
+                        maxLabel = recognition.getLabel();
+                        break;
+                    }
+                }
+                //_telemetry.update();
+            }
+*/
             telemetry.addData(">", "Robot Heading = %4.0f", getRawHeading());
             telemetry.addData("Zdeg", angles.firstAngle);
             telemetry.addData("Ydeg", angles.secondAngle);
@@ -232,8 +251,8 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         }
 
         // Set the encoders for closed loop speed control, and reset the heading.
-        _move.leftsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        _move.rightsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
         resetHeading();
 
         // Step through each leg of the path,
@@ -241,31 +260,57 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         //          holdHeading() is used after turns to let the heading stabilize
         //          Add a sleep(2000) after any step to keep the telemetry data visible for review
 
-        _liftclaw.Calibrate();
+        //_liftclaw.Calibrate();
 
-        _liftclaw.runToPos(900);
+        //is there a location?
+        ElapsedTime et = new ElapsedTime();
+        //we have 15 secs to look for the cone
+        while (et.seconds() < 12 && maxLabel == null ) {
+            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            if (updatedRecognitions != null) {
+                for (Recognition recognition : updatedRecognitions) {
+                    if (recognition.getConfidence() > maxConfidence) {
+                        maxLabel = recognition.getLabel();
+                        break;
+                    }
+                }
+            }
+        }
 
-        driveStraight(DRIVE_SPEED, 20.0, 0.0);    // Drive Forward 18"
-        holdHeading(TURN_SPEED, 0, 2);
+        int _whereToEnd_value;
+        if (maxLabel == null) {
+            _whereToEnd_value = (int)Math.floor(Math.random()*100%3)+1;
+        }
+        else {
+            _whereToEnd_value = maxLabel.getBytes()[0] - '0';
+        }
+        telemetry.addData("Endpoint:",_whereToEnd_value);
+
+        //_liftclaw.reset_zero();
+        //_liftclaw.runToPos(900);
+
+        driveStraight(DRIVE_SPEED, 19.5, 0.0);    // Drive Forward 18"
+        holdHeading(TURN_SPEED, 0, 1);
         _arm_release.setPosition(0.85); // release the arm.
         switch (_whereToEnd_value) {
             case 1:
-                turnToHeading(TURN_SPEED,-90);
-                holdHeading(TURN_SPEED,-90,2);
-                driveStraight(DRIVE_SPEED, -14, 0.0);
-
+                turnToHeading(TURN_SPEED,90);
+                holdHeading(TURN_SPEED,90,1);
+                driveStraight(DRIVE_SPEED, -16, 90);
                 break;
             case 2:
-                holdHeading(TURN_SPEED, -90, 2);
+                turnToHeading(TURN_SPEED, 90);
+                holdHeading(TURN_SPEED, 90, 1);
                 break;
             case 3:
-                turnToHeading(TURN_SPEED,-90);
-                holdHeading(TURN_SPEED,-90,2);
-                driveStraight(DRIVE_SPEED, 30.5,-90);
-                holdHeading(TURN_SPEED,-45,2);
+                turnToHeading(TURN_SPEED,90);
+                holdHeading(TURN_SPEED,90,1);
+                driveStraight(DRIVE_SPEED, 20,-90);
+                holdHeading(TURN_SPEED,45,1);
                 break;
         }
 
+        //_liftclaw.Calibrate();
 
         //turnToHeading(TURN_SPEED, 90); // turn ccw 90 degrees
 
@@ -320,15 +365,15 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
 
             // Determine new target position, and pass to motor controller
             int moveCounts = (int)(distance * COUNTS_PER_INCH);
-            leftTarget = _move.leftgetCurrentPosition() + moveCounts;
-            rightTarget = _move.rightgetCurrentPosition() + moveCounts;
+            leftTarget = leftgetCurrentPosition() + moveCounts;
+            rightTarget = rightgetCurrentPosition() + moveCounts;
 
             // Set Target FIRST, then turn on RUN_TO_POSITION
-            _move.leftsetTargetPosition(leftTarget);
-            _move.rightsetTargetPosition(rightTarget);
+            leftsetTargetPosition(leftTarget);
+            rightsetTargetPosition(rightTarget);
 
-            _move.leftsetMode(DcMotor.RunMode.RUN_TO_POSITION);
-            _move.rightsetMode(DcMotor.RunMode.RUN_TO_POSITION);
+            leftsetMode(DcMotor.RunMode.RUN_TO_POSITION);
+            rightsetMode(DcMotor.RunMode.RUN_TO_POSITION);
 
             // Set the required driving speed  (must be positive for RUN_TO_POSITION)
             // Start driving straight, and then enter the control loop
@@ -337,7 +382,7 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
 
             // keep looping while we are still active, and BOTH motors are running.
             while (opModeIsActive() &&
-                   (_move.leftisBusy() && _move.rightisBusy())) {
+                   (leftisBusy() && rightisBusy())) {
 
                 // Determine required steering to keep on heading
                 turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
@@ -355,63 +400,13 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
 
             // Stop all motion & Turn off RUN_TO_POSITION
             moveRobot(0, 0);
-            _move.leftsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            _move.rightsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
 
 
-    public void driveLateral(double maxDriveSpeed,
-                             double distance,
-                             int direction) {
 
-        // Ensure that the opmode is still active
-        if (opModeIsActive()) {
-
-            // Determine new target position, and pass to motor controller
-            int moveCounts = (int)(Math.sqrt(2) * distance * COUNTS_PER_INCH);
-            leftTarget =  (_move.leftLateralgetCurrentPosition() + moveCounts) * direction;
-            rightTarget = -1 * (_move.rightLateralgetCurrentPosition() + moveCounts) * direction;
-
-            // Set Target FIRST, then turn on RUN_TO_POSITION
-            _move.leftLateralsetTargetPosition(leftTarget);
-            _move.rightLateralsetTargetPosition(rightTarget);
-
-            _move.leftLateralsetPower(leftTarget);
-            _move.rightLateralsetPower(rightTarget);
-
-            _move.leftsetMode(DcMotor.RunMode.RUN_TO_POSITION);
-            _move.rightsetMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-            // Set the required driving speed  (must be positive for RUN_TO_POSITION)
-            // Start driving straight, and then enter the control loop
-            maxDriveSpeed = Math.abs(maxDriveSpeed);
-            moveRobot(maxDriveSpeed, 0);
-
-            // keep looping while we are still active, and BOTH motors are running.
-            while (opModeIsActive() &&
-                    (_move.leftisBusy() && _move.rightisBusy())) {
-
-                // Determine required steering to keep on heading
-                turnSpeed = getSteeringCorrection(robotHeading, P_DRIVE_GAIN);
-
-                // if driving in reverse, the motor correction also needs to be reversed
-                if (RIGHT < 0)
-                    turnSpeed *= -1.0;
-
-                // Apply the turning correction to the current driving speed.
-                moveRobotLateral(driveSpeed, turnSpeed);
-
-                // Display drive status for the driver.
-                sendTelemetry(true);
-            }
-
-            // Stop all motion & Turn off RUN_TO_POSITION
-            moveRobotLateral(0, 0);
-            _move.leftsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            _move.rightsetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }
-    }
 
     /**
      *  Method to spin on central axis to point in a new direction.
@@ -531,28 +526,11 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
             rightSpeed /= max;
         }
 
-        _move.leftsetPower(leftSpeed);
-        _move.rightsetPower(rightSpeed);
+        leftsetPower(leftSpeed);
+        rightsetPower(rightSpeed);
     }
 
-    public void moveRobotLateral(double drive, double turn) {
-        driveSpeed = drive;     // save this value as a class member so it can be used by telemetry.
-        turnSpeed  = turn;      // save this value as a class member so it can be used by telemetry.
 
-        leftSpeed  = drive - turn;
-        rightSpeed = drive + turn;
-
-        // Scale speeds down if either one exceeds +/- 1.0;
-        double max = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
-        if (max > 1.0)
-        {
-            leftSpeed /= max;
-            rightSpeed /= max;
-        }
-
-        _move.leftLateralsetPower(leftSpeed);
-        _move.rightLateralsetPower(rightSpeed);
-    }
     /**
      *  Display the various control parameters while driving
      *
@@ -563,8 +541,8 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         if (straight) {
             telemetry.addData("Motion", "Drive Straight");
             telemetry.addData("Target Pos L:R",  "%7d:%7d",      leftTarget,  rightTarget);
-            telemetry.addData("Actual Pos L:R",  "%7d:%7d",      _move.leftgetCurrentPosition(),
-                    _move.rightgetCurrentPosition());
+            telemetry.addData("Actual Pos L:R",  "%7d:%7d",      leftgetCurrentPosition(),
+                    rightgetCurrentPosition());
         } else {
             telemetry.addData("Motion", "Turning");
         }
@@ -592,16 +570,135 @@ public class RobotAutoDriveByGyro_Linear extends LinearOpMode {
         robotHeading = 0;
     }
 
-    int _whereToEnd_value=0;
-    public void setWhereToEnd(String  whereToEnd) {
-        if (whereToEnd == null) {
-            _whereToEnd_value = (int)Math.floor(Math.random()*100%3)+1;
+
+
+
+    public void leftsetMode(DcMotor.RunMode run) {
+        motors[2].setMode(run);
+        motors[3].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+    public void rightsetMode(DcMotor.RunMode run) {
+        motors[0].setMode(run);
+        motors[1].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void leftsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior) {
+        motors[2].setZeroPowerBehavior(behavior);
+        motors[3].setZeroPowerBehavior(behavior);
+    }
+
+    public void rightsetZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior) {
+        motors[0].setZeroPowerBehavior(behavior);
+        motors[1].setZeroPowerBehavior(behavior);
+    }
+
+    public int leftgetCurrentPosition() {
+        return motors[2].getCurrentPosition();
+    }
+    public int rightgetCurrentPosition() {
+        return motors[1].getCurrentPosition();
+    }
+
+    public void leftsetTargetPosition(int leftTarget) {
+        //motors[3].setTargetPosition(leftTarget);
+        motors[2].setTargetPosition(leftTarget);
+    }
+
+    public void rightsetTargetPosition(int rightTarget) {
+        //motors[0].setTargetPosition(rightTarget);
+        motors[0].setTargetPosition(rightTarget);
+    }
+
+    public boolean leftisBusy() {
+        return motors[2].isBusy();
+    }
+
+    public boolean rightisBusy() {
+        return motors[0].isBusy();
+    }
+
+    public void leftsetPower(double leftspeed) {
+        motors[3].setPower(leftspeed);
+        motors[2].setPower(leftspeed);
+    }
+
+    public void rightsetPower(double rightspeed) {
+        motors[0].setPower(rightspeed);
+        motors[1].setPower(rightspeed);
+    }
+
+    private static final String TFOD_MODEL_ASSET = "PowerPlay.tflite";
+    private static final String[] LABELS = {
+            "1",
+            "2",
+            "3"
+    };
+    private static final String VUFORIA_KEY = VuforiaKey.Key;
+    private VuforiaLocalizer vuforia;
+    private TFObjectDetector tfod;
+
+
+    private void TensorFlowInit(int tfodmonitorid, Telemetry telemetry, WebcamName camera) {
+        // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
+        // first.
+        initVuforia(camera);
+        initTfod(tfodmonitorid);
+
+        telemetry.addData("Count", 0);
+        telemetry.addData("Image", 0);
+        telemetry.addData("- Position (Row/Col)", 0);
+        telemetry.addData("- Size (Width/Height)", 0);
+
+        /*
+         * Activate TensorFlow Object Detection before we wait for the start command.
+         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
+         */
+        if (tfod != null) {
+            tfod.activate();
+
+            // The TensorFlow software will scale the input images from the camera to a lower resolution.
+            // This can result in lower detection accuracy at longer distances (> 55cm or 22").
+            // If your target is at distance greater than 50 cm (20") you can increase the magnification value
+            // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
+            // should be set to the value of the images used to create the TensorFlow Object Detection model
+            // (typically 16/9).
+            tfod.setZoom(1.1, 16.0/9.0);
+        }
+    }
+
+    private void initVuforia(WebcamName cameraName) {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.cameraName = cameraName;
+//        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+    }
+
+    /**
+     * Initialize the TensorFlow Object Detection engine.
+     */
+    private void initTfod(int monitorId) {
+        TFObjectDetector.Parameters tfodParameters;
+        if (monitorId < 0) {
+            tfodParameters = new TFObjectDetector.Parameters();
         }
         else {
-            _whereToEnd_value = whereToEnd.getBytes()[0] - '0';
+            tfodParameters = new TFObjectDetector.Parameters(monitorId);
         }
-        telemetry.addData("Endpoint:",_whereToEnd_value);
-        _tensorFlow.cancel();
-        _tensorFlow=null;
+        tfodParameters.minResultConfidence = 0.75f;
+        tfodParameters.isModelTensorFlow2 = true;
+        tfodParameters.inputSize = 300;
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        // Use loadModelFromAsset() if the TF Model is built in as an asset by Android Studio
+        // Use loadModelFromFile() if you have downloaded a custom team model to the Robot Controller's FLASH.
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
+        // tfod.loadModelFromFile(TFOD_MODEL_FILE, LABELS);
     }
 }

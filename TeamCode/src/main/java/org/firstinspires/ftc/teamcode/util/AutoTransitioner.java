@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode.util;
 
 import android.util.Log;
 
@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManagerImpl;
+
+import android.os.Handler;
 
 /**
  * Created by KNO3 Robotics
@@ -36,13 +38,15 @@ public class AutoTransitioner extends Thread {
                     //If there is a transition set up and the active op mode is no longer the one
                     //the transition was set up with, proceed with the transition
                     if (onStop != null && opModeManager.getActiveOpMode() != onStop) {
-                        Thread.sleep(1000); //Wait 1 second to prevent weird conditions
-                        opModeManager.initActiveOpMode(transitionTo); //Request initialization of the teleop
-                        reset(); //Reset the AutoTransitioner
+                        new Handler().postDelayed(() -> {
+                            opModeManager.initActiveOpMode(transitionTo); //Request initialization of the teleop
+                            reset(); //Reset the AutoTransitioner
+                        },1000L);
+
                     }
                 }
-                Thread.sleep(50); //Sleep 50 milliseconds to minimize performance impact to the rest of your program
-            }
+                    Thread.sleep(50); //Sleep 50 milliseconds to minimize performance impact to the rest of your program
+             }
         } catch (InterruptedException ex) {
             Log.e("RCActivity", "AutoTransitioner shutdown, thread interrupted");
         }

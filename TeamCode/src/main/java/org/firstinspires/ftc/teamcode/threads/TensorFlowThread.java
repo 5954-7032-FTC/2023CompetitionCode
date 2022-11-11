@@ -10,9 +10,10 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.util.List;
 
-import org.firstinspires.ftc.teamcode.RobotAutoDriveByGyro_Linear;
+import org.firstinspires.ftc.teamcode.util.WhereToEnd;
 import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
 
+@Deprecated
 public class TensorFlowThread extends RobotThread {
 
     Telemetry _telemetry;
@@ -44,8 +45,8 @@ public class TensorFlowThread extends RobotThread {
     private TFObjectDetector tfod;
 
     Telemetry.Item _T_image, _T_pos, _T_size, _T_count;
-    RobotAutoDriveByGyro_Linear _top;
-    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera, RobotAutoDriveByGyro_Linear top) {
+    WhereToEnd _top;
+    public TensorFlowThread(int tfodmonitorid, Telemetry telemetry, WebcamName camera, WhereToEnd top) {
         TensorFlowInit(tfodmonitorid,telemetry,camera);
         _top = top;
     }
@@ -79,7 +80,7 @@ public class TensorFlowThread extends RobotThread {
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
-            tfod.setZoom(1.0, 16.0/9.0);
+            tfod.setZoom(1.1, 16.0/9.0);
         }
     }
 

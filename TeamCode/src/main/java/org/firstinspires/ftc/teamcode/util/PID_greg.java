@@ -1,10 +1,10 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode.util;
 
-public abstract class PID {
+public abstract class PID_greg {
     double _kP,_kI,_kD;
     int _error_margin;
 
-    public PID(double kP,double kI,double kD, int error_margin) {
+    public PID_greg(double kP, double kI, double kD, int error_margin) {
         _kP =kP;
         _kI=kI;
         _kD=kD;

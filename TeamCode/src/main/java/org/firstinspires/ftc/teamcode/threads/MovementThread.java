@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.threads;
 
 import com.qualcomm.robotcore.hardware.*;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.algorithms.motorRampProfile;
+import org.firstinspires.ftc.teamcode.util.FieldPosition;
 
 
 public class MovementThread extends RobotThread {
@@ -16,7 +16,7 @@ public class MovementThread extends RobotThread {
     double _zone_forward = 0.1;
     double _zone_rotation =0.1;
     double _ramp_rate = 1.5;
-    boolean _is_auto = false;
+    public boolean _is_auto = false;
 
     DcMotor [] _DriveMotors;
     motorRampProfile _Joy1X, _Joy1Y, _Joy2X;
@@ -86,60 +86,6 @@ public class MovementThread extends RobotThread {
          */
            if (! _is_auto) Drive(_gamepad.left_stick_y, _gamepad.left_stick_x, _gamepad.right_stick_x);
         }
-    }
-
-
-
-    long _lateral_debounce =0;
-    public double getZoneLateral() {
-        return _zone_lateral;
-    }
-    public void setZoneLateral(double lateral_amount) {
-        if (System.currentTimeMillis() > _lateral_debounce +500 ) {
-            _lateral_debounce = System.currentTimeMillis();
-            _zone_lateral = lateral_amount;
-            _ZL.setValue(lateral_amount);
-        }
-    }
-
-    long _zone_forward_debounce = 0;
-    public double getZoneForward() {
-        return _zone_forward;
-    }
-    public void setZoneForward(double forward_amount) {
-        if (System.currentTimeMillis() > _zone_forward_debounce +500 ) {
-            _zone_forward_debounce = System.currentTimeMillis();
-            _zone_forward = forward_amount;
-            _ZF.setValue(forward_amount);
-        }
-    }
-
-    long _zone_rotate_debounce = 0;
-    public double getZoneRotate() {
-        return _zone_rotation;
-    }
-    public void setZoneRotate(double rotation_amount) {
-        if (System.currentTimeMillis() > _zone_rotate_debounce +500 ) {
-            _zone_rotate_debounce = System.currentTimeMillis();
-            _zone_rotation = rotation_amount;
-            _ZR.setValue(rotation_amount);
-        }
-    }
-
-    long _ramp_rate_debounce =0;
-    public double getRampRate() { return _ramp_rate; }
-    public void setRampRate(double rampRate) {
-        if (System.currentTimeMillis() > _ramp_rate_debounce +500 ) {
-            _ramp_rate_debounce = System.currentTimeMillis();
-            _ramp_rate = rampRate;
-            _RR.setValue(rampRate);
-        }
-    }
-
-    public void DriveTo(FieldPosition pos) {
-        //calculate the correct heading from _pos to pos.....
-        double angle = Math.atan2( _pos.Y-pos.Y, _pos.X-pos.X );
-
     }
 
     FieldPosition _pos;
@@ -315,8 +261,12 @@ public class MovementThread extends RobotThread {
         _T_FL.setValue(Range.clip(wheelSpeeds[3],-1,1));
     }
 
+    private double clipZone(double power, double zone, double min, double max) {
+        
+    }
     private double deadzone(double power, double zone)  {
-        return Math.abs(power) > zone ? power : 0.0 ;
+        //return Math.abs(power) > zone ? power : 0.0 ;
+        return (-zone > power && power < zone)?0.0:power;
     }
 
 }
