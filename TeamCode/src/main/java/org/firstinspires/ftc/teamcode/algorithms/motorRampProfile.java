@@ -9,6 +9,10 @@ public class motorRampProfile {
     double prevSign = 0;
     double rampRate;
 
+    public void setRampRate(double rampRate) {
+        this.rampRate = rampRate;
+    }
+
     public motorRampProfile(double rampRate){
         this.rampRate = rampRate;
     }

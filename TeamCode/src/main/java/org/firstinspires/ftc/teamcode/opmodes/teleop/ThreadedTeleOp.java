@@ -1,21 +1,29 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.*;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
+import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
 
 //threaded tele op controller......
 @TeleOp(name = "TeleOp")
-public class threadedTeleOp extends OpMode {
+public class ThreadedTeleOp extends OpMode {
 
-    MovementThread _move;
+    TweakableMovementThread _move;
     LiftClawThread _liftclaw;
+    ArmRelease _armRelease;
 
     Telemetry.Item _threadCount;
-    Servo _arm_release;
+    private BNO055IMU imu         = null;
 
     @Override
     public void init() {
@@ -27,7 +35,9 @@ public class threadedTeleOp extends OpMode {
                 hardwareMap.dcMotor.get("D_RL"),
                 hardwareMap.dcMotor.get("D_FL")};
 
-        _move = new MovementThread(gamepad1, motors,telemetry);
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+        _move = new TweakableMovementThread(gamepad1, motors,telemetry,imu,500);
 
 
         // setup LiftClaw
@@ -37,8 +47,6 @@ public class threadedTeleOp extends OpMode {
                 hardwareMap.servo.get("CLAW1")
         };
         final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-
-
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
         _liftclaw = new LiftClawThread(
@@ -47,13 +55,12 @@ public class threadedTeleOp extends OpMode {
                 bottom_stop,
                 post_sensor,
                 telemetry,
-                gamepad2,
-                _move
+                gamepad2
                 );
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
 
-        _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
+        _armRelease =  new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
     }
 
     @Override
@@ -68,10 +75,10 @@ public class threadedTeleOp extends OpMode {
         _threadCount.setValue(Thread.activeCount());
         telemetry.update();
         if (gamepad1.left_bumper) {
-            _arm_release.setPosition(0.4);
+            _armRelease.set();
         }
         if (gamepad1.right_bumper) {
-            _arm_release.setPosition(0.7);
+            _armRelease.release();
         }
     }
 
