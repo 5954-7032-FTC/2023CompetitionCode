@@ -51,7 +51,7 @@ public class LiftClawLinear {
 
 
     // hardware objects
-    DcMotor _LiftMotor;
+    DcMotor[] _LiftMotors;
     Servo[] _clawServos;
     TouchSensor _bottomStopSensor;
     DistanceSensor _releaseSensor;
@@ -62,12 +62,13 @@ public class LiftClawLinear {
 
 
 
-    public LiftClawLinear(DcMotor liftMotor, Servo [] clawServos, TouchSensor stop, DistanceSensor release,
+    public LiftClawLinear(DcMotor [] liftMotors, Servo [] clawServos, TouchSensor stop, DistanceSensor release,
                           Telemetry telemetry) {
         _telemetry = telemetry;
 
-        _LiftMotor = liftMotor;
-        _LiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _LiftMotors = liftMotors;
+        _LiftMotors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _LiftMotors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         _bottomStopSensor = stop;
         _releaseSensor = release;
@@ -94,11 +95,11 @@ public class LiftClawLinear {
     }
 
     public int getEncoder() {
-        return _LiftMotor.getCurrentPosition();
+        return _LiftMotors[0].getCurrentPosition();
     }
 
     public void SetMode(DcMotor.RunMode SMode) {
-        _LiftMotor.setMode(SMode);
+        _LiftMotors[0].setMode(SMode);
     }
 
 
@@ -106,10 +107,12 @@ public class LiftClawLinear {
 
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
         while (!_bottomStopSensor.isPressed()) {
-            _LiftMotor.setPower(-0.5);
+            _LiftMotors[0].setPower(-0.5);
+            _LiftMotors[1].setPower(-0.5);
             //_DriveMotor.getCurrentPosition();
         }
-        _LiftMotor.setPower(0);
+        _LiftMotors[0].setPower(0);
+        _LiftMotors[1].setPower(0);
         reset_zero();
     }
 
@@ -133,17 +136,19 @@ public class LiftClawLinear {
     public void runToPos(int target) {
         int current, last;
        SetMode(DcMotor.RunMode.RUN_TO_POSITION);
-        _LiftMotor.setTargetPosition(target);
-        _LiftMotor.setPower( -Math.signum(getEncoder()-target) );
+        _LiftMotors[0].setTargetPosition(target);
+        _LiftMotors[0].setPower( -Math.signum(getEncoder()-target) );
+        _LiftMotors[1].setPower( -Math.signum(getEncoder()-target) );
         last = -1;
         while (!stop_runToPos) {
-            current = _LiftMotor.getCurrentPosition();
+            current = _LiftMotors[0].getCurrentPosition();
             if (current == last) break;
             last = current;
-            if (!_LiftMotor.isBusy()) break;
+            if (!_LiftMotors[0].isBusy()) break;
             //if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
         }
-        _LiftMotor.setPower(0);
+        _LiftMotors[0].setPower(0);
+        _LiftMotors[1].setPower(0);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setStop_runToPos(false);
     }
@@ -160,13 +165,16 @@ public class LiftClawLinear {
 
     public void Move(double move) { // move with the joystick
         if (!_bottomStopSensor.isPressed()) {
-            _LiftMotor.setPower(Range.clip(-move, -1, 1));
+            _LiftMotors[0].setPower(Range.clip(-move, -1, 1));
+            _LiftMotors[1].setPower(Range.clip(-move, -1, 1));
         } else { // bottom sensor is pressed
             reset_zero();
             if (-move > 0) {//if moving up, let it!
-                _LiftMotor.setPower(Range.clip(-move, -1, 1));
+                _LiftMotors[0].setPower(Range.clip(-move, -1, 1));
+                _LiftMotors[1].setPower(Range.clip(-move, -1, 1));
             } else { // else stop
-                _LiftMotor.setPower(0);
+                _LiftMotors[0].setPower(0);
+                _LiftMotors[1].setPower(0);
             }
         }
         _T_pos.setValue(getEncoder());

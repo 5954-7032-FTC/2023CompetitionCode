@@ -35,7 +35,10 @@ public class OldThreadedTeleOp extends OpMode {
 
 
         // setup LiftClawOld
-        final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
+        final DcMotor [] lift_motors = {
+                hardwareMap.dcMotor.get("LIFT"),
+                hardwareMap.dcMotor.get("LIFT2")
+        };
         final Servo [] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
@@ -46,7 +49,7 @@ public class OldThreadedTeleOp extends OpMode {
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
         _liftclaw = new LiftClawThread(
-                lift_motor,
+                lift_motors,
                 lift_servos,
                 bottom_stop,
                 post_sensor,
