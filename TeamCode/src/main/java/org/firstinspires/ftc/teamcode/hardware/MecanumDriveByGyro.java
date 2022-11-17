@@ -227,6 +227,85 @@ public class MecanumDriveByGyro extends MecanumDrive {
 
 
 
+
+
+    public void setMotorSpeeds(double [] speeds) {
+        for (int i=0; i< motors.length; i++) motors[i].setPower(Range.clip(speeds[i], -1, 1));
+    }
+
+
+
+
+    public void driveStraight(double distance, double heading) {
+        driveRobot(DRIVE_SPEED,distance,heading);
+    }
+    public void driveLeft(double distance, double heading) {
+        int moveCounts = moveCounts(distance);
+        leftTarget = leftGetEncoder() -moveCounts;
+        rightTarget = rightGetEncoder() + moveCounts;
+        driveIt(DRIVE_SPEED,distance,heading);
+    }
+    public void driveRight(double distance, double heading) {
+        int moveCounts = moveCounts(distance);
+        leftTarget = leftGetEncoder() -moveCounts;
+        rightTarget = rightGetEncoder() + moveCounts;
+        driveIt(DRIVE_SPEED,distance,heading);
+    }
+
+    public int moveCounts(double distance) {
+        return (int)(distance * COUNTS_PER_INCH_FORWARD);
+    }
+
+
+    public void driveRobot(double maxDriveSpeed,
+                           double distance,
+                           double heading) {
+
+        // Determine new target position, and pass to motor controller
+        int moveCounts = (int) (distance * COUNTS_PER_INCH_FORWARD);
+        leftTarget = leftGetEncoder() + moveCounts;
+        rightTarget = rightGetEncoder() + moveCounts;
+        driveIt(maxDriveSpeed,distance,heading);
+    }
+
+    public void driveIt(double maxDriveSpeed,double distance, double heading) {
+        // Set Target FIRST, then turn on RUN_TO_POSITION
+        leftSetTargetPosition(leftTarget);
+        rightSetTargetPosition(rightTarget);
+
+        setRunMode(new int[]{_LEFT_MOTOR},DcMotor.RunMode.RUN_TO_POSITION);
+        setRunMode(new int[]{_RIGHT_MOTOR},DcMotor.RunMode.RUN_TO_POSITION);
+
+        // Set the required driving speed  (must be positive for RUN_TO_POSITION)
+        // Start driving straight, and then enter the control loop
+        maxDriveSpeed = Math.abs(maxDriveSpeed);
+        moveRobot(maxDriveSpeed, 0);
+
+        // keep looping while we are still active, and BOTH motors are running.
+        while (leftIsBusy() && rightIsBusy()) {
+
+            // Determine required steering to keep on heading
+            turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
+
+            // if driving in reverse, the motor correction also needs to be reversed
+            if (distance < 0)
+                turnSpeed *= -1.0;
+
+            // Apply the turning correction to the current driving speed.
+            moveRobot(driveSpeed, turnSpeed);
+
+        }
+
+        // Stop all motion & Turn off RUN_TO_POSITION
+        moveRobot(0, 0);
+        setRunMode(new int[]{_LEFT_MOTOR},DcMotor.RunMode.RUN_USING_ENCODER);
+        setRunMode(new int[]{_RIGHT_MOTOR},DcMotor.RunMode.RUN_USING_ENCODER);
+
+    }
+
+
+
+
     public void slideXY(double Xinches, double Yinches) {
         double curentHeading = getRobotHeading();
         // measure relative position from where we are now to where we want to be....
@@ -278,8 +357,4 @@ public class MecanumDriveByGyro extends MecanumDrive {
 
     }
 
-
-    public void setMotorSpeeds(double [] speeds) {
-        for (int i=0; i< motors.length; i++) motors[i].setPower(Range.clip(speeds[i], -1, 1));
-    }
 }

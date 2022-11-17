@@ -1,16 +1,23 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode.hardware;
 
-import com.qualcomm.robotcore.hardware.*;
-import org.firstinspires.ftc.robotcore.external.*;
-import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.Range;
 
-public class LiftClawThread extends RobotThread {
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.threads.RobotThread;
+import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
+
+public class LiftClaw extends RobotThread {
     private final Gamepad _gamepad;
     //constants
-    /*
     final static double _servo_pos_open = 0;
     final static double _servo_pos_close = .45;
-    final static double _servo_pos_nut = .72;
     public final static int BOTTOM_POS = 0;   //1120 ticks per revolution
     public final static int LOW_POS = 2300;
     public final static int MEDIUM_POS = 3600;
@@ -23,53 +30,77 @@ public class LiftClawThread extends RobotThread {
     public final static int GUIDE_UP_HEIGHT=2400;
     public final static int GUIDE_DOWN_HEIGHT=3500;
 
+    public final static int STACK_TOP=1540;
+    public final static int STACK_TOP_PICKUP=800;
+    public final static int STACK_INCREMENT=200;
+
     // static points
     final static int CLAW_A = 0;
     final static int CLAW_B = 1;
-*/
+
 
     // hardware objects
-    //DcMotor[]  _DriveMotors;
-    //Servo[] _clawServos;
-    //Servo _pipe_guide;
-    //TouchSensor _bottomStopSensor;
-    //DistanceSensor _releaseSensor;
-//    Telemetry _telemetry;
+    DcMotor[]  _DriveMotors;
+    Servo[] _clawServos;
+    Servo _pipe_guide;
+    TouchSensor _bottomStopSensor;
+    DistanceSensor _releaseSensor;
+    Telemetry _telemetry;
+
     //telemetry items
-//    Telemetry.Item _T_pos,_B_stop,_C_STAT,P_GUIDE;
-    LiftClaw _claw;
+    Telemetry.Item _T_pos,_B_stop,_C_STAT,P_GUIDE;
 
 
-    public LiftClawThread(DcMotor [] Motors, Servo [] servos, Servo pipe_guide, TouchSensor stop, DistanceSensor release,
-                          Telemetry telemetry, Gamepad gamepad) {
+
+    //34.75" from bottom to top
+    /*
+    1540 top of 5 stack
+
+
+   cone stack heights
+     1st 0
+     2nd 200
+     3rd 400
+     4th 600
+     5th 800
+     */
+
+
+    public LiftClaw(DcMotor [] Motors, Servo [] servos, Servo pipe_guide, TouchSensor stop, DistanceSensor release,
+                    Telemetry telemetry, Gamepad gamepad) {
         _gamepad=gamepad;
-  //      _telemetry = telemetry;
-        //_DriveMotors = Motors;
-        //_clawServos = new Servo[2];
-        //_pipe_guide = pipe_guide;
-        //for (int i = 0; i < servos.length; i++) {
-        //    servos[i].setDirection(Servo.Direction.FORWARD);
-        //    _clawServos[i] = servos[i];
-       // }
+        _telemetry = telemetry;
+        _DriveMotors = Motors;
+        _clawServos = new Servo[2];
+        _pipe_guide = pipe_guide;
+        for (int i = 0; i < servos.length; i++) {
+            servos[i].setDirection(Servo.Direction.FORWARD);
+            _clawServos[i] = servos[i];
+        }
 
-        //_C_STAT = telemetry.addData("Claw", "open");
-        //ClawOpen();
-        //ClawClose();
-        //_bottomStopSensor = stop;
-        //_releaseSensor = release;
-        //_DriveMotors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //_DriveMotors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //_DriveMotors[1].setDirection(DcMotorSimple.Direction.REVERSE);
-        _claw = new LiftClaw(Motors,servos,pipe_guide,stop,release,telemetry,gamepad);
-
+        _C_STAT = telemetry.addData("Claw", "open");
+        ClawOpen();
+        ClawClose();
+        _bottomStopSensor = stop;
+        _releaseSensor = release;
+        _T_pos = telemetry.addData("Lift", 0);
+        _B_stop = telemetry.addData("BSTOP", _bottomStopSensor.isPressed());
+        _DriveMotors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _DriveMotors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _DriveMotors[1].setDirection(DcMotorSimple.Direction.REVERSE);
+        P_GUIDE = _telemetry.addData("PIPE GUIDE", "unknown");
         //Calibrate();
     }
 
-/*
+
     public void ClawOpen() {
         _clawServos[CLAW_A].setPosition(_servo_pos_open);
         _clawServos[CLAW_B].setPosition(1-_servo_pos_open);
         _C_STAT.setValue("open");
+    }
+
+    public void set_clawOpenTime(long _clawOpenTime) {
+        this._clawOpenTime = _clawOpenTime;
     }
 
     long _clawOpenTime=0;
@@ -91,12 +122,6 @@ public class LiftClawThread extends RobotThread {
             _pipe_guide.setPosition(PIPE_GUIDE_CLOSE);
             P_GUIDE.setValue("DOWN");
         }
-    }
-
-    public void ClawCloseNut() {
-            _clawServos[CLAW_A].setPosition(1 - _servo_pos_nut);
-            _clawServos[CLAW_B].setPosition(_servo_pos_nut);
-            _C_STAT.setValue("closedNUT");
     }
 
     public int getEncoder() {
@@ -162,7 +187,9 @@ public class LiftClawThread extends RobotThread {
             if (current == last) break;
             last = current;
             if (!_DriveMotors[0].isBusy()) break;
-            if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
+            if (!( _gamepad instanceof GamepadEmpty )) {
+                if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
+            }
         }
         _DriveMotors[0].setPower(0);
         _DriveMotors[1].setPower(0);
@@ -180,53 +207,5 @@ public class LiftClawThread extends RobotThread {
         }
         _DriveMotors[0].setPower(0);
         _DriveMotors[1].setPower(0);
-    }
-    public boolean _is_auto = false;
-*/
-
-    public void run() {
-        _claw.Calibrate();
-        while (!isCancelled()) {
-            //lift movement
-            if (_claw.checkOptical()) {
-                _claw.set_clawOpenTime(System.currentTimeMillis());
-                _claw.ClawOpen();
-            }
-
-            _claw.Move((double) _gamepad.left_stick_y);
-            //  claw control
-            if (_gamepad.right_trigger > 0) {
-                _claw.ClawOpen();
-            } else {
-                _claw.ClawClose();
-            }
-            if (_gamepad.x) {
-                _claw.runToPos(LiftClaw.BOTTOM_POS);
-            }
-            if (_gamepad.a) {
-                _claw.runToPos(LiftClaw.LOW_POS);
-            }
-            if (_gamepad.b) {
-                _claw.runToPos(LiftClaw.MEDIUM_POS);
-            }
-            if (_gamepad.y) {
-                _claw.runToPos(LiftClaw.HIGH_POS);
-            }
-
-
-
-            long pos = _claw.getEncoder();
-
-
-            if (_gamepad.left_bumper) _claw.pipeGuideUp();
-            else
-            if (_gamepad.right_bumper) _claw.pipeGuideDown();
-            else {
-                if (pos < LiftClaw.GUIDE_UP_HEIGHT)
-                    _claw.pipeGuideUp();
-                if (pos > LiftClaw.GUIDE_DOWN_HEIGHT)
-                    _claw.pipeGuideDown();
-            }
-        }
     }
 }

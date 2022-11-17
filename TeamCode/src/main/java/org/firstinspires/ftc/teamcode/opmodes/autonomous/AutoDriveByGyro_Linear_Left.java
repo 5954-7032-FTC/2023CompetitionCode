@@ -50,9 +50,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.LiftClawLinear;
 import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
 import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
+import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
 import java.util.List;
 
@@ -154,7 +156,7 @@ public class AutoDriveByGyro_Linear_Left extends LinearOpMode {
     static final int LEFT_ENCODER = 3;
     static final int RIGHT_ENCODER = 0;
 
-    LiftClawLinear _liftclaw;
+    LiftClaw _liftclaw;
     Servo _arm_release;
 
 
@@ -190,12 +192,15 @@ public class AutoDriveByGyro_Linear_Left extends LinearOpMode {
 
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
-        _liftclaw = new LiftClawLinear(
+        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
+        _liftclaw = new LiftClaw(
                 lift_motors,
                 lift_servos,
+                pipe_guide,
                 bottom_stop,
                 post_sensor,
-                telemetry
+                telemetry,
+                new GamepadEmpty()
         );
 
         _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
