@@ -21,7 +21,7 @@ public class LiftClawThread extends RobotThread {
 
 
     // hardware objects
-    DcMotor _DriveMotor;
+    DcMotor[]  _DriveMotors;
     Servo[] _clawServos;
     TouchSensor _bottomStopSensor;
     DistanceSensor _releaseSensor;
@@ -45,11 +45,11 @@ public class LiftClawThread extends RobotThread {
      5th 800
      */
 
-    public LiftClawThread(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensor release,
+    public LiftClawThread(DcMotor [] Motors, Servo [] servos, TouchSensor stop, DistanceSensor release,
                           Telemetry telemetry, Gamepad gamepad) {
         _gamepad=gamepad;
         _telemetry = telemetry;
-        _DriveMotor = Motor;
+        _DriveMotors = Motors;
         _clawServos = new Servo[2];
         for (int i = 0; i < servos.length; i++) {
             servos[i].setDirection(Servo.Direction.FORWARD);
@@ -63,7 +63,9 @@ public class LiftClawThread extends RobotThread {
         _releaseSensor = release;
         _T_pos = telemetry.addData("Lift", 0);
         _B_stop = telemetry.addData("BSTOP", _bottomStopSensor.isPressed());
-        _DriveMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _DriveMotors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _DriveMotors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        _DriveMotors[1].setDirection(DcMotorSimple.Direction.REVERSE);
         //Calibrate();
     }
 
@@ -90,22 +92,25 @@ public class LiftClawThread extends RobotThread {
     }
 
     public int getEncoder() {
-        return _DriveMotor.getCurrentPosition();
+        return _DriveMotors[0].getCurrentPosition();
     }
 
     public void SetMode(DcMotor.RunMode SMode) {
-        _DriveMotor.setMode(SMode);
+        _DriveMotors[0].setMode(SMode);
     }
 
     public void Move(double move) { // move with the joystick
         if (!_bottomStopSensor.isPressed()) {
-            _DriveMotor.setPower(Range.clip(-move, -1, 1));
+            _DriveMotors[0].setPower(Range.clip(-move, -1, 1));
+            _DriveMotors[1].setPower(Range.clip(-move, -1, 1));
         } else {
             reset_zero();
             if (-move > 0) {
-                _DriveMotor.setPower(Range.clip(-move, -1, 1));
+                _DriveMotors[0].setPower(Range.clip(-move, -1, 1));
+                _DriveMotors[1].setPower(Range.clip(-move, -1, 1));
             } else {
-                _DriveMotor.setPower(0);
+                _DriveMotors[0].setPower(0);
+                _DriveMotors[1].setPower(0);
             }
         }
         _T_pos.setValue(getEncoder());
@@ -115,10 +120,12 @@ public class LiftClawThread extends RobotThread {
 
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
         while (!_bottomStopSensor.isPressed()) {
-            _DriveMotor.setPower(-0.5);
+            _DriveMotors[0].setPower(-0.5);
+            _DriveMotors[1].setPower(-0.5);
             //_DriveMotor.getCurrentPosition();
         }
-        _DriveMotor.setPower(0);
+        _DriveMotors[0].setPower(0);
+        _DriveMotors[1].setPower(0);
         reset_zero();
     }
 
@@ -137,29 +144,33 @@ public class LiftClawThread extends RobotThread {
 
         int current, last;
        SetMode(DcMotor.RunMode.RUN_TO_POSITION);
-        _DriveMotor.setTargetPosition(target);
-        _DriveMotor.setPower( -Math.signum(getEncoder()-target) );
+        _DriveMotors[0].setTargetPosition(target);
+        _DriveMotors[0].setPower( -Math.signum(getEncoder()-target) );
+        _DriveMotors[1].setPower( -Math.signum(getEncoder()-target) );
         last = -1;
         while (true) {
-            current = _DriveMotor.getCurrentPosition();
+            current = _DriveMotors[0].getCurrentPosition();
             if (current == last) break;
             last = current;
-            if (!_DriveMotor.isBusy()) break;
+            if (!_DriveMotors[0].isBusy()) break;
             if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
         }
-        _DriveMotor.setPower(0);
+        _DriveMotors[0].setPower(0);
+        _DriveMotors[1].setPower(0);
         SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
     }
 
     public void placeCone() {
-        _DriveMotor.setPower(-1);
+        _DriveMotors[0].setPower(-1);
+        _DriveMotors[1].setPower(-1);
         while (true) {
             if (checkOptical()) break;
-            if (_DriveMotor.getCurrentPosition() < 100  || _DriveMotor.getCurrentPosition() > 5300) break;
+            if (_DriveMotors[0].getCurrentPosition() < 100  || _DriveMotors[0].getCurrentPosition() > 5300) break;
 
         }
-        _DriveMotor.setPower(0);
+        _DriveMotors[0].setPower(0);
+        _DriveMotors[1].setPower(0);
     }
     public boolean _is_auto = false;
     public void run() {
