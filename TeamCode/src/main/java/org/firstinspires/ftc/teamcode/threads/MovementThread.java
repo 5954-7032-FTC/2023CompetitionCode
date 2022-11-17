@@ -262,7 +262,7 @@ public class MovementThread extends RobotThread {
     }
 
     private double clipZone(double power, double zone, double min, double max) {
-        
+        return Range.clip(deadzone(power,zone),min,max);
     }
     private double deadzone(double power, double zone)  {
         //return Math.abs(power) > zone ? power : 0.0 ;
