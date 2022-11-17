@@ -52,9 +52,13 @@ public class ThreadedTeleOp extends OpMode {
         final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
+
+        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
+
         _liftclaw = new LiftClawThread(
                 lift_motors,
                 lift_servos,
+                pipe_guide,
                 bottom_stop,
                 post_sensor,
                 telemetry,

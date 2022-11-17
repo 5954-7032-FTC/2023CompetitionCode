@@ -33,8 +33,8 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -45,10 +45,9 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
-import org.firstinspires.ftc.teamcode.hardware.LiftClawLinear;
+import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
-import org.firstinspires.ftc.teamcode.hardware.TensorFlow;
 import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
 import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
 
@@ -101,7 +100,7 @@ import java.util.List;
  *  Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name = "LeftAutoTest", group = "Test")
+@Autonomous(name = "LeftTest5")
 public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
 
     /* Declare OpMode members. */
@@ -113,28 +112,29 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
     static final int LEFT_ENCODER = 3;
     static final int RIGHT_ENCODER = 0;
 
-    LiftClawLinear _liftclaw;
+    private static final int HOLD_TIME = 1;
+
+    private int current_stack_height=LiftClaw.STACK_TOP;
+
+    LiftClaw _liftclaw;
     Servo _arm_release;
 
     MecanumDriveByGyro _move;
 
     DcMotor [] motors;
 
-    TensorFlow tensorFlow;
+    //TensorFlow tensorFlow;
     @Override
     public void runOpMode() {
 
         // set up MovementThread
 
-        motors = new DcMotor[4];
-        motors[0]=hardwareMap.dcMotor.get("D_FR");
-        motors[1]=hardwareMap.dcMotor.get("D_RR");
-        motors[2]=hardwareMap.dcMotor.get("D_RL");
-        motors[3]=hardwareMap.dcMotor.get("D_FL");
-
-        motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
-        motors[3].setDirection(DcMotorSimple.Direction.REVERSE);
-
+        motors = new DcMotor[]{
+            motors[0] = hardwareMap.dcMotor.get("D_FR"),
+            motors[1] = hardwareMap.dcMotor.get("D_RR"),
+            motors[2] = hardwareMap.dcMotor.get("D_RL"),
+            motors[3] = hardwareMap.dcMotor.get("D_FL")
+        };
         MecanumDrive.Parameters driveParameters = new MecanumDrive.Parameters();
         driveParameters.motors = motors;
         driveParameters._ENCODER_WHEELS=new int[]{0,3};
@@ -143,28 +143,29 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
         driveParameters.imu = hardwareMap.get(BNO055IMU.class, "imu");
         _move = new MecanumDriveByGyro(driveParameters,LEFT_ENCODER,RIGHT_ENCODER);
 
-
-        // setup LiftClawOld
+        // setup LiftClaw
         final DcMotor [] lift_motors = {
                 hardwareMap.dcMotor.get("LIFT"),
                 hardwareMap.dcMotor.get("LIFT2")
         };
-
-        final Servo[] lift_servos = {
+        final Servo [] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
         };
         final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-
-
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
-        _liftclaw = new LiftClawLinear(
+
+        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
+
+        _liftclaw = new LiftClaw(
                 lift_motors,
                 lift_servos,
+                pipe_guide,
                 bottom_stop,
                 post_sensor,
-                telemetry
+                telemetry,
+                new Gamepad()
         );
 
         _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
@@ -215,29 +216,44 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
         telemetry.addData("Endpoint:",_whereToEnd_value);
 
 
-        final double NORTH=0;
-        final double EAST=-90;
-        final double WEST=90;
-        final double SOUTH=180;
+        final double LEFT=-90;
 
-        _move.slideXY(0,18); // go forward 18"
-        //_move.slideXY(18,18);
 
-        //_move.driveRobot(19.5, NORTH);    // Drive Forward 18"
-        //holdHeading(TURN_SPEED, NORTH, 1);
+        //place first cone
+        driveStraight(18); // move forward
         _arm_release.setPosition(0.85); // release the arm.
+        slideRight(9);     // slide 1/2 tile right
+        driveStraight(3);  // move forward
+        _liftclaw.runToPos(40);  // place cone
+        _liftclaw.ClawOpen();           // open claw
+        driveStraight(-3);  // backup.
+        _liftclaw.ClawClose();
+        slideRight(9);      //  get next cone
+        asyncRunLiftToPos(LiftClaw.STACK_TOP);
+        turnRobot(LEFT);                 // turn left
+
+        for (int i=0; i<5; i++) {  // move 5 more cones
+            slideRight(9);     // slide right
+            driveStraight(18);    // go forward
+            pickNextCone();                   // pick up cone
+            driveStraight(-18);  //back up
+            slideLeft(9);       // move over
+            driveStraight(3);    // go forward
+            placeCone();                       // place cone
+            driveStraight(-3);   // backup
+        }
+
         switch (_whereToEnd_value) {
             case 1:
-                //_move.driveRobot( -16, EAST);
-                _move.slideXY(-18,18);
-                _move.turnRobot(EAST,1);
+                driveStraight(18);
+                turnRobot(LEFT);
                 break;
             case 2:
-                _move.turnRobot(EAST, 1);
+                turnRobot(LEFT);
                 break;
             case 3:
-                _move.slideXY(18,18);
-                _move.turnRobot(EAST,1);
+                driveStraight(-18);
+                turnRobot(LEFT);
                 break;
         }
 
@@ -327,5 +343,46 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
         // Use loadModelFromFile() if you have downloaded a custom team model to the Robot Controller's FLASH.
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
         // tfod.loadModelFromFile(TFOD_MODEL_FILE, LABELS);
+    }
+
+    public void driveStraight(double distanceInches) {
+        _move.driveStraight(distanceInches, 0);
+    }
+    public void slideLeft(double distanceInches) {
+        _move.driveLeft(distanceInches,0);
+    }
+    public void slideRight(double distanceInches) {
+        _move.driveRight(distanceInches,0);
+    }
+    public void turnRobot(double direction) {
+        _move.turnRobot(direction,HOLD_TIME);
+    }
+
+    public void updateStackHeight() {
+        current_stack_height -= LiftClaw.STACK_INCREMENT;
+    }
+
+    public void asyncRunLiftToPos(int pos) {
+        new Thread() {
+            @Override
+            public void run() {
+                _liftclaw.runToPos(pos);
+            }
+        }.start();
+        updateStackHeight();
+    }
+
+    public void pickNextCone() {
+        _liftclaw.ClawClose();
+        _liftclaw.runToPos(current_stack_height); // pick up cone
+        _liftclaw.runToPos(LiftClaw.LOW_POS);
+
+    }
+
+    public void placeCone() {
+        _liftclaw.runToPos(40);    // place cone
+        _liftclaw.ClawOpen();
+        driveStraight(-3);
+        _liftclaw.ClawClose();
     }
 }
