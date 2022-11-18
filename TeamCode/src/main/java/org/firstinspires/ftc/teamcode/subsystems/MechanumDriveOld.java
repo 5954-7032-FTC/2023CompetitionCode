@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.util.*;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.algorithms.*;
 
-public class MechanumDrive {
+public class MechanumDriveOld {
 
     DcMotor DriveM[];
     double _zone_lateral = 0.1;
@@ -31,10 +31,10 @@ public class MechanumDrive {
         _T_RR = telemetry.addData("RR", 0);
         _T_FL = telemetry.addData("FL", 0);
         _Z_RL = telemetry.addData("RL", 0);
-        _ZL = telemetry.addData("ZL", _zone_lateral);
-        _ZF = telemetry.addData("ZF", _zone_forward);
-        _ZR = telemetry.addData("ZR", _zone_rotation);
-        _RR = telemetry.addData("RR", _ramp_rate);
+        //_ZL = telemetry.addData("ZL", _zone_lateral);
+        //_ZF = telemetry.addData("ZF", _zone_forward);
+        //_ZR = telemetry.addData("ZR", _zone_rotation);
+        //_RR = telemetry.addData("RR", _ramp_rate);
     }
 
     public double getZoneLateral() {

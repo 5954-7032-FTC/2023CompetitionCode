@@ -1,25 +1,29 @@
-package org.firstinspires.ftc.teamcode.threads;
+package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
+import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
 
 //threaded tele op controller......
-@TeleOp(name = "TeleOpVision")
-public class threadedTeleOpVision extends OpMode {
+@TeleOp(name = "TeleOp")
+public class ThreadedTeleOp extends OpMode {
 
-    MovementThread _move;
+    TweakableMovementThread _move;
     LiftClawThread _liftclaw;
-    VuforiaFieldNavigationWebcamThread _vuforia;
-    TensorFlowThread _tensor;
+    ArmRelease _armRelease;
 
     Telemetry.Item _threadCount;
+    private BNO055IMU imu         = null;
 
     @Override
     public void init() {
@@ -31,31 +35,30 @@ public class threadedTeleOpVision extends OpMode {
                 hardwareMap.dcMotor.get("D_RL"),
                 hardwareMap.dcMotor.get("D_FL")};
 
-        _move = new MovementThread(gamepad1, motors,telemetry);
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
-        /*
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        _vuforia = new VuforiaFieldNavigationWebcamThread(
-                hardwareMap.get(WebcamName.class, "Webcam 1"),
-                telemetry,
-                cameraMonitorViewId
-        );
-        */
+        _move = new TweakableMovementThread(gamepad1, motors,telemetry,imu,500);
+
 
         // setup LiftClaw
-        final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
+        final DcMotor [] lift_motors = {
+                hardwareMap.dcMotor.get("LIFT"),
+                hardwareMap.dcMotor.get("LIFT2")
+        };
         final Servo [] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
         };
         final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-
-
         final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
 
+
+        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
+
         _liftclaw = new LiftClawThread(
-                lift_motor,
+                lift_motors,
                 lift_servos,
+                pipe_guide,
                 bottom_stop,
                 post_sensor,
                 telemetry,
@@ -64,34 +67,26 @@ public class threadedTeleOpVision extends OpMode {
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
 
-
-
-
-        WebcamName camera =  hardwareMap.get(WebcamName.class, "Webcam 1");
-        int tfodmonitorid = hardwareMap.appContext.getResources().getIdentifier(
-                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        _tensor = new TensorFlowThread(tfodmonitorid,telemetry,camera);
-
+        _armRelease =  new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
     }
 
     @Override
     public void start() {
         _move.start();
         _liftclaw.start();
-        _tensor.start();
-        //_vuforia.start();
     }
 
 
     @Override
     public void loop() {
-
-
-
-
-
         _threadCount.setValue(Thread.activeCount());
         telemetry.update();
+        if (gamepad1.left_bumper) {
+            _armRelease.set();
+        }
+        if (gamepad1.right_bumper) {
+            _armRelease.release();
+        }
     }
 
     @Override

@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.*;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-public class LiftClaw {
+public class LiftClawOld {
 
     DcMotor DriveM;
     Servo[] clawServos;
