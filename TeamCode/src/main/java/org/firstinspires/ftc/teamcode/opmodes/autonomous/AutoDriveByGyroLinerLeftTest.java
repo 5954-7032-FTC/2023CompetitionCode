@@ -31,27 +31,23 @@ package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
 import org.firstinspires.ftc.teamcode.subsystems.VuforiaKey;
-import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
-
-import java.util.List;
+import org.firstinspires.ftc.teamcode.util.Debounce;
 
 /**
  *  This file illustrates the concept of driving an autonomous path based on Gyro heading and encoder counts.
@@ -100,8 +96,8 @@ import java.util.List;
  *  Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name = "LeftTest5")
-public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
+@Autonomous(name = "LeftTest-0.8.1")
+public class AutoDriveByGyroLinerLeftTest extends OpMode {
 
     /* Declare OpMode members. */
 
@@ -123,32 +119,38 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
 
     DcMotor [] motors;
 
+    final double LEFT=-90;
+    final double RIGHT=90;
+    long debounceDelayms = 200;
+    Debounce dpad_up,dpad_down,dpad_left,dpad_right;
+
     //TensorFlow tensorFlow;
     @Override
-    public void runOpMode() {
-
+    public void init() {
+        telemetry.setAutoClear(false);
         // set up MovementThread
 
         motors = new DcMotor[]{
-            motors[0] = hardwareMap.dcMotor.get("D_FR"),
-            motors[1] = hardwareMap.dcMotor.get("D_RR"),
-            motors[2] = hardwareMap.dcMotor.get("D_RL"),
-            motors[3] = hardwareMap.dcMotor.get("D_FL")
+                hardwareMap.dcMotor.get("D_FR"),
+                hardwareMap.dcMotor.get("D_RR"),
+                hardwareMap.dcMotor.get("D_RL"),
+                hardwareMap.dcMotor.get("D_FL")
         };
         MecanumDrive.Parameters driveParameters = new MecanumDrive.Parameters();
         driveParameters.motors = motors;
-        driveParameters._ENCODER_WHEELS=new int[]{0,3};
-        driveParameters._REVERSED_WHEELS=new int[]{2,3};
-        driveParameters.robotCentric=true;
+        driveParameters._ENCODER_WHEELS = new int[]{0, 3};
+        driveParameters._REVERSED_WHEELS = new int[]{2, 3};
+        driveParameters.robotCentric = true;
         driveParameters.imu = hardwareMap.get(BNO055IMU.class, "imu");
-        _move = new MecanumDriveByGyro(driveParameters,LEFT_ENCODER,RIGHT_ENCODER);
+        driveParameters.telemetry = telemetry;
+        _move = new MecanumDriveByGyro(driveParameters, LEFT_ENCODER, RIGHT_ENCODER);
 
         // setup LiftClaw
-        final DcMotor [] lift_motors = {
+        final DcMotor[] lift_motors = {
                 hardwareMap.dcMotor.get("LIFT"),
                 hardwareMap.dcMotor.get("LIFT2")
         };
-        final Servo [] lift_servos = {
+        final Servo[] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
         };
@@ -168,29 +170,22 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
                 new Gamepad()
         );
 
-        _arm_release =  hardwareMap.servo.get("ARM_RELEASE");
+        _arm_release = hardwareMap.servo.get("ARM_RELEASE");
 
+        /*
         WebcamName camera =  hardwareMap.get(WebcamName.class, "Webcam 1");
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
         TensorFlowInit(tfodMonitorViewId,telemetry,camera);
+         */
+        //AutoTransitioner.transitionOnStop(this, "TeleOp");
 
-        AutoTransitioner.transitionOnStop(this, "TeleOp");
-        double maxConfidence=-1;
+        double maxConfidence = -1;
         String maxLabel = null;
-
-        // Wait for the game to start (Display Gyro value while waiting)
-        while (!opModeIsActive()) {
-            idle();
-        }
-
-        // Set the encoders for closed loop speed control, and reset the heading.
         _move.resetHeading();
-
-        waitForStart();
-
         //is there a location?
+        /*
         ElapsedTime et = new ElapsedTime();
         //we have 12 secs to look for the cone
 
@@ -215,51 +210,42 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
         }
         telemetry.addData("Endpoint:",_whereToEnd_value);
 
+         */
 
-        final double LEFT=-90;
+
+        dpad_left = new Debounce(debounceDelayms);
+        dpad_right = new Debounce(debounceDelayms);
+        dpad_up = new Debounce(debounceDelayms);
+        dpad_down = new Debounce(debounceDelayms);
 
 
-        //place first cone
-        driveStraight(18); // move forward
-        _arm_release.setPosition(0.85); // release the arm.
-        slideRight(9);     // slide 1/2 tile right
-        driveStraight(3);  // move forward
-        _liftclaw.runToPos(40);  // place cone
-        _liftclaw.ClawOpen();           // open claw
-        driveStraight(-3);  // backup.
-        _liftclaw.ClawClose();
-        slideRight(9);      //  get next cone
-        asyncRunLiftToPos(LiftClaw.STACK_TOP);
-        turnRobot(LEFT);                 // turn left
-
-        for (int i=0; i<5; i++) {  // move 5 more cones
-            slideRight(9);     // slide right
-            driveStraight(18);    // go forward
-            pickNextCone();                   // pick up cone
-            driveStraight(-18);  //back up
-            slideLeft(9);       // move over
-            driveStraight(3);    // go forward
-            placeCone();                       // place cone
-            driveStraight(-3);   // backup
+    }
+    public void loop() {
+        if (dpad_left.checkPress(gamepad1.dpad_left)) {
+            driveLeft(6);
         }
-
-        switch (_whereToEnd_value) {
-            case 1:
-                driveStraight(18);
-                turnRobot(LEFT);
-                break;
-            case 2:
-                turnRobot(LEFT);
-                break;
-            case 3:
-                driveStraight(-18);
-                turnRobot(LEFT);
-                break;
+        if (dpad_right.checkPress(gamepad1.dpad_right)) {
+            driveRight(6);
         }
+        if (dpad_up.checkPress(gamepad1.dpad_up)) {
+            driveForward(6);
+        }
+        if (dpad_down.checkPress(gamepad1.dpad_down)) {
+            driveReverse(6);
+        }
+        if (gamepad1.left_bumper) {
+            turnRobot(LEFT);
+        }
+        if (gamepad1.right_bumper) {
+            turnRobot(RIGHT);
+        }
+    }
 
+    @Override
+    public void stop() {
         telemetry.addData("Path", "Complete");
         telemetry.update();
-        sleep(1000);  // Pause to display last telemetry message.
+        _move.stopImu();
     }
 
     /*
@@ -345,14 +331,18 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
         // tfod.loadModelFromFile(TFOD_MODEL_FILE, LABELS);
     }
 
-    public void driveStraight(double distanceInches) {
-        _move.driveStraight(distanceInches, 0);
+    public void driveForward(double distanceInches) {
+        _move.driveForward(distanceInches);
     }
-    public void slideLeft(double distanceInches) {
-        _move.driveLeft(distanceInches,0);
+    public void driveReverse(double distanceInches) {
+        _move.driveReverse(distanceInches);
     }
-    public void slideRight(double distanceInches) {
-        _move.driveRight(distanceInches,0);
+
+    public void driveLeft(double distanceInches) {
+        _move.driveLeft(distanceInches);
+    }
+    public void driveRight(double distanceInches) {
+        _move.driveRight(distanceInches);
     }
     public void turnRobot(double direction) {
         _move.turnRobot(direction,HOLD_TIME);
@@ -382,7 +372,7 @@ public class AutoDriveByGyroLinerLeftTest extends LinearOpMode {
     public void placeCone() {
         _liftclaw.runToPos(40);    // place cone
         _liftclaw.ClawOpen();
-        driveStraight(-3);
+        driveReverse(-3);
         _liftclaw.ClawClose();
     }
 }
