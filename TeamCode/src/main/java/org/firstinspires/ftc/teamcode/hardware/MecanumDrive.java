@@ -23,17 +23,17 @@ public class MecanumDrive {
 
         // These constants define the desired driving/control characteristics
         // They can/should be tweaked to suit the specific robot drive train.
-        public double     DRIVE_SPEED             = 0.4;     // Max driving speed for better distance accuracy.
-        public double     TURN_SPEED              = 0.2;     // Max Turn speed to limit turn rate
+        public double     DRIVE_SPEED             = 0.6;     // Max driving speed for better distance accuracy.
+        public double     TURN_SPEED              = 0.3;     // Max Turn speed to limit turn rate
         public double     HEADING_THRESHOLD       = 0.5 ;    // How close must the heading get to the target before moving to next step.
         // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
         // Define the Proportional control coefficient (or GAIN) for "heading control".
         // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
         // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
         // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
-        public double     P_TURN_GAIN            = 0.02;     // Larger is more responsive, but also less stable
+        public double     P_TURN_GAIN            = 0.008;     // Larger is more responsive, but also less stable
         //maybe only use one of these.
-        public double     P_DRIVE_GAIN           = 0.02;     // Larger is more responsive, but also less stable
+        public double     P_DRIVE_GAIN           = 0.01;     // Larger is more responsive, but also less stable
 
         public int [] _FREE_WHEELS; // no encoder wheels (RIGHT, LEFT)
         public int [] _ENCODER_WHEELS; // encoder wheels (RIGHT, LEFT)
@@ -111,6 +111,7 @@ public class MecanumDrive {
     protected static final double SQRT2=Math.sqrt(2);
     protected static final double SQRT2_OVER2 = SQRT2/2;
     protected static final double PI_OVER4=Math.PI/4;
+    protected  static final double PI_OVER2=Math.PI/2;
 
     public void setRunMode(int [] wheels, DcMotor.RunMode mode) {
         if (wheels != null && wheels.length != 0)
@@ -129,6 +130,8 @@ public class MecanumDrive {
                 motors[wheel].setDirection(dir);
 
     }
+
+
 
     protected void initAutoMecanum() {
         //set up wheels that are encoderless
