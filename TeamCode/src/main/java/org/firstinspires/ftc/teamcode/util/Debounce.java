@@ -9,10 +9,6 @@ public class Debounce {
         _lastPressed = 0;
     }
 
-    public void set_debounceDelay(long _delayms) {
-        this._debounceDelay = _delayms;
-    }
-
     public boolean checkPress(boolean pressed) {
 
         if (!pressed) return false;
@@ -25,4 +21,9 @@ public class Debounce {
         // no change, return false
         return false;
     }
+
+    public void set_debounceDelay(long _delayms) {
+        this._debounceDelay = _delayms;
+    }
+
 }

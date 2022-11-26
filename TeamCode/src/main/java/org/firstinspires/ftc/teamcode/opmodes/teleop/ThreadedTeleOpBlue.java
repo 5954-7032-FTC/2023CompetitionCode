@@ -10,24 +10,31 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.hardware.Lights;
 import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
 import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
 
 //threaded tele op controller......
-@TeleOp(name = "TeleOp")
-public class ThreadedTeleOp extends OpMode {
+@TeleOp(name = "TeleOpBlue")
+public class ThreadedTeleOpBlue extends OpMode {
 
     TweakableMovementThread _move;
     LiftClawThread _liftclaw;
     ArmRelease _armRelease;
+    Lights _light;
 
     Telemetry.Item _threadCount;
     private BNO055IMU imu         = null;
+    //ColorSensor _leftColor,_rightColor;
 
     @Override
     public void init() {
         telemetry.setAutoClear(false);
+
+        //_leftColor = hardwareMap.colorSensor.get("LEFT_COLOR");
+        //_rightColor = hardwareMap.colorSensor.get("RIGHT_COLOR");
+
         // set up MovementThread
         final DcMotor [] motors = {
                 hardwareMap.dcMotor.get("D_FR"),
@@ -68,14 +75,18 @@ public class ThreadedTeleOp extends OpMode {
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
 
         _armRelease =  new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
+
+        _light = new Lights(hardwareMap.dcMotor.get("LIGHTS"));
+        T_LCOLOR = telemetry.addData("LEFT:",String.format("0x%08X", 0));
+        T_RCOLOR = telemetry.addData("RIGHT:",String.format("0x%08X", 0));
     }
+
+    Telemetry.Item T_LCOLOR,T_RCOLOR;
 
     @Override
-    public void start() {
-        _move.start();
-        _liftclaw.start();
+    public void init_loop() {
+        _light.blueon();
     }
-
 
     @Override
     public void loop() {
@@ -92,6 +103,7 @@ public class ThreadedTeleOp extends OpMode {
     @Override
     public void stop() {
         super.stop();
+        _light.off();
         _move.cancel();
         _liftclaw.cancel();
     }

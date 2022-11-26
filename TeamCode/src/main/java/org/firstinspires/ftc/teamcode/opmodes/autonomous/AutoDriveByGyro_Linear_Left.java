@@ -106,6 +106,7 @@ import java.util.List;
  */
 
 @Autonomous(name = "LeftAutoBetter")
+@Deprecated
 public class AutoDriveByGyro_Linear_Left extends LinearOpMode {
 
     /* Declare OpMode members. */
