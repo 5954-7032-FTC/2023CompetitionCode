@@ -185,20 +185,20 @@ public class LiftClawThread extends RobotThread {
 */
 
     public void run() {
-        _claw.Calibrate();
+        _claw.calibrateLift();
         while (!isCancelled()) {
             //lift movement
             if (_claw.checkOptical()) {
-                _claw.set_clawOpenTime(System.currentTimeMillis());
-                _claw.ClawOpen();
+                _claw.setClawOpenTime(System.currentTimeMillis());
+                _claw.clawOpen();
             }
 
-            _claw.Move((double) _gamepad.left_stick_y);
+            _claw.moveLift((double) _gamepad.left_stick_y);
             //  claw control
             if (_gamepad.right_trigger > 0) {
-                _claw.ClawOpen();
+                _claw.clawOpen();
             } else {
-                _claw.ClawClose();
+                _claw.clawClose();
             }
             if (_gamepad.x) {
                 _claw.runToPos(LiftClaw.BOTTOM_POS);
