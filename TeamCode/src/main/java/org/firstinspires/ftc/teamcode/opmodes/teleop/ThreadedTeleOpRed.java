@@ -84,13 +84,15 @@ public class ThreadedTeleOpRed extends OpMode {
     Telemetry.Item T_LCOLOR,T_RCOLOR;
 
 
-    @Override
-    public void init_loop() {
-        _light.redon();
-    }
 
+
+    boolean first = true;
     @Override
     public void loop() {
+        if (first) {
+            _light.redon();
+            first=false;
+        }
         _threadCount.setValue(Thread.activeCount());
         telemetry.update();
         if (gamepad1.left_bumper) {
