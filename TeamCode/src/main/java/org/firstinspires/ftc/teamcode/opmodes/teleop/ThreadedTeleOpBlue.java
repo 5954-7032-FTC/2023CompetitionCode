@@ -83,13 +83,13 @@ public class ThreadedTeleOpBlue extends OpMode {
 
     Telemetry.Item T_LCOLOR,T_RCOLOR;
 
-    @Override
-    public void init_loop() {
-        _light.blueon();
-    }
-
+    boolean first=true;
     @Override
     public void loop() {
+        if (first) {
+            _light.blueon();
+            first=false;
+        }
         _threadCount.setValue(Thread.activeCount());
         telemetry.update();
         if (gamepad1.left_bumper) {

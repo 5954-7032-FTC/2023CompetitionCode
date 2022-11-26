@@ -42,7 +42,7 @@ public class GyroLinearLeftBlue extends GyroLinearBase {
 
     @Override
     public ColorSensorDevice getColorSensorDevice() {
-        return colorSensorDeviceLeft;
+        return colorSensorDeviceRight;
     }
 
     @Override

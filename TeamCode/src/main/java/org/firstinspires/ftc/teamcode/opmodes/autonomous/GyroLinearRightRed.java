@@ -39,6 +39,7 @@ public class GyroLinearRightRed extends GyroLinearBase {
     public void transitionOnStop() {
         AutoTransitioner.transitionOnStop(this, "TeleOpRed");
     }
+
     @Override
     public ColorSensorDevice getColorSensorDevice() {
         return colorSensorDeviceLeft;

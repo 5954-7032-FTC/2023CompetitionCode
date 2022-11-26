@@ -147,6 +147,8 @@ public abstract class GyroLinearBase extends LinearOpMode {
 
         // first put the arm up.
         armRelease.release();
+
+        _liftclaw.pipeGuideUp();
         // move to the cone
         strafeDirection(20); // should put us clearly on the cone
         //get the place to end from the findMaxColor()
