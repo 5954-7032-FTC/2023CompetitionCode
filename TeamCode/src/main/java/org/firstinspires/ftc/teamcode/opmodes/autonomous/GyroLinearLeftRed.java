@@ -59,4 +59,8 @@ public class GyroLinearLeftRed extends GyroLinearBase {
         light.redon();
     }
 
+    @Override
+    public Lights getLight() {
+        return new LightRed(hardwareMap.dcMotor.get("LIGHTS"));
+    }
 }

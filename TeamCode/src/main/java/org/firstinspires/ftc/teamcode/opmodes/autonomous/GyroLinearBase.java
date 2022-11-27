@@ -44,11 +44,12 @@ import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
+import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
 public abstract class GyroLinearBase extends LinearOpMode {
 
     protected static final int HOLD_TIME = 1;
-    protected int current_stack_height=LiftClaw.STACK_TOP;
+    protected int current_stack_height=LiftClaw.STACK_TOP_PICKUP;
     protected LiftClaw _liftclaw;
     protected ArmRelease armRelease;
 
@@ -71,10 +72,11 @@ public abstract class GyroLinearBase extends LinearOpMode {
     public abstract void lightOn();
     public abstract void transitionOnStop();
 
+    public abstract Lights getLight();
     public void initGyroLinearBase() {
         telemetry.setAutoClear(false);
 
-        light = new Lights(hardwareMap.dcMotor.get("LIGHTS"));
+        light = getLight();// new Lights(hardwareMap.dcMotor.get("LIGHTS"));
 
         // set up MovementThread
 
@@ -97,10 +99,7 @@ public abstract class GyroLinearBase extends LinearOpMode {
         _move = new MecanumDriveByGyro(driveParameters);
 
         // setup LiftClaw
-        final DcMotor[] lift_motors = {
-                hardwareMap.dcMotor.get("LIFT"),
-                hardwareMap.dcMotor.get("LIFT2")
-        };
+        final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
         final Servo[] lift_servos = {
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
@@ -112,18 +111,19 @@ public abstract class GyroLinearBase extends LinearOpMode {
         final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
 
         _liftclaw = new LiftClaw(
-                lift_motors,
+                lift_motor,
                 lift_servos,
                 pipe_guide,
                 bottom_stop,
                 post_sensor,
                 telemetry,
-                new Gamepad()
+                new GamepadEmpty(),
+                light
         );
 
         armRelease = new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
 
-        transitionOnStop();
+        //transitionOnStop();
 
         double maxConfidence = -1;
         String maxLabel = null;
@@ -147,37 +147,46 @@ public abstract class GyroLinearBase extends LinearOpMode {
 
         // first put the arm up.
         armRelease.release();
+        _liftclaw.calibrateLift();
+        _liftclaw.runToPos(2300);
 
-        _liftclaw.pipeGuideUp();
+
         // move to the cone
-        strafeDirection(20); // should put us clearly on the cone
+        strafeDirection(22); // should put us clearly on the cone
         //get the place to end from the findMaxColor()
         int place_to_end = getColorSensorDevice().findMaxColor();
+        telemetry.log().add("Place to end: "+place_to_end);
+        telemetry.update();
         // now to move around a bit...
         // place the first cone
-        _liftclaw.runToPos(LiftClaw.LOW_POS);
-        strafeDirection(12);
-        driveForward(1);
+        strafeDirection(23);
+        driveForward(3);
         placeCone();
+        driveReverse(3);
+
         // now get a new one.....
-        strafeDirection(12);
-        driveForward(24);
+        strafeDirection(14);
+        //turnRobot(0);
+        driveForward(25);
+
         pickNextCone();
         // place it on the pole
-        driveReverse(24);
-        strafeAntiDirection(12);
+        driveReverse(25);
+        strafeAntiDirection(14);
+        driveForward(3);
         placeCone();
+        driveReverse(3);
 
         switch (place_to_end) {
             case 1:
-                strafeDirection(12);
-                driveForward(24);
+                strafeDirection(14);
+                driveForward(25);
                 break;
             case 2:
                 // already there!
                 break;
             case 3:
-                strafeDirection(12);
+                strafeDirection(14);
                 driveReverse(24);
                 break;
         }
@@ -214,7 +223,6 @@ public abstract class GyroLinearBase extends LinearOpMode {
 
     public void placeCone() {
         _liftclaw.placeCone();
-        _liftclaw.runToPos(40);    // place cone
         _liftclaw.clawOpen();
         _liftclaw.runToPos(LiftClaw.LOW_POS);
     }
