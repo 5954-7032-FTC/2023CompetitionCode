@@ -18,20 +18,19 @@ public class MecanumDrive {
         public double     COUNTS_PER_MOTOR_REV    = 1120 ;   // 1120 per revolution
         public double     DRIVE_GEAR_REDUCTION    = 24.0/32.0; //   3/4
         public double     WHEEL_DIAMETER_INCHES   = 96/25.4 ;     // For figuring circumference
-        public double     COUNTS_PER_INCH_FORWARD         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                (WHEEL_DIAMETER_INCHES * 3.1415);
+        public double  COUNTS_PER_INCH_FORWARD = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
         // These constants define the desired driving/control characteristics
         // They can/should be tweaked to suit the specific robot drive train.
         public double     DRIVE_SPEED             = 0.4;     // Max driving speed for better distance accuracy.
-        public double     TURN_SPEED              = 0.2;     // Max Turn speed to limit turn rate
+        public double     TURN_SPEED              = 0.3;     // Max Turn speed to limit turn rate
         public double     HEADING_THRESHOLD       = 0.5 ;    // How close must the heading get to the target before moving to next step.
         // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
         // Define the Proportional control coefficient (or GAIN) for "heading control".
         // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
         // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
         // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
-        public double     P_TURN_GAIN            = 0.02;     // Larger is more responsive, but also less stable
+        public double     P_TURN_GAIN            = 0.004;     // Larger is more responsive, but also less stable
         //maybe only use one of these.
         public double     P_DRIVE_GAIN           = 0.02;     // Larger is more responsive, but also less stable
 
@@ -47,8 +46,6 @@ public class MecanumDrive {
         public double _INCHES_PER_METER=39.3701;
         public double _ROBOT_INCHES_FRONT=3;
     }
-
-
 
     protected double _ROBOT_INCHES_FRONT;
     protected double _INCHES_PER_METER;
@@ -90,8 +87,8 @@ public class MecanumDrive {
         this.DRIVE_SPEED = parameters.DRIVE_SPEED;
         this.TURN_SPEED = parameters.TURN_SPEED;
         this.HEADING_THRESHOLD = parameters.HEADING_THRESHOLD;
-        P_TURN_GAIN = parameters.P_TURN_GAIN;
-        P_DRIVE_GAIN = parameters.P_DRIVE_GAIN;
+        this.P_TURN_GAIN = parameters.P_TURN_GAIN;
+        this.P_DRIVE_GAIN = parameters.P_DRIVE_GAIN;
         this._FREE_WHEELS = parameters._FREE_WHEELS;
         this._ENCODER_WHEELS = parameters._ENCODER_WHEELS;
         this._REVERSED_WHEELS = parameters._REVERSED_WHEELS;
@@ -111,29 +108,30 @@ public class MecanumDrive {
     protected static final double SQRT2=Math.sqrt(2);
     protected static final double SQRT2_OVER2 = SQRT2/2;
     protected static final double PI_OVER4=Math.PI/4;
+    protected  static final double PI_OVER2=Math.PI/2;
 
-    public void setRunMode(int [] wheels, DcMotor.RunMode mode) {
-        if (wheels != null && wheels.length != 0)
-            for (int wheel : wheels)
-                motors[wheel].setMode(mode);
-    }
-    public void setZeroPowerBehavior( int [] wheels, DcMotor.ZeroPowerBehavior behavior) {
-        if (wheels != null && wheels.length != 0)
-            for (int wheel : wheels)
-                motors[wheel].setZeroPowerBehavior(behavior);
+    public boolean getRobotCentric() {
+        return robotCentric;
     }
 
-    public void setDirection(int [] wheels, DcMotorSimple.Direction dir) {
-        if (wheels != null && wheels.length != 0)
-            for (int wheel : wheels)
-                motors[wheel].setDirection(dir);
+    public double getRotationRate() {
+        return _ROTATION_RATE;
+    }
 
+    public double getRobotHeading() {
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
+    }
+
+    public double getSpeedFactor() {
+        return _SPEED_FACTOR;
     }
 
     protected void initAutoMecanum() {
         //set up wheels that are encoderless
+
         setRunMode(_FREE_WHEELS, DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        setRunMode(_ENCODER_WHEELS, DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setRunMode(_ENCODER_WHEELS, DcMotor.RunMode.RUN_USING_ENCODER);
 
         setDirection(_REVERSED_WHEELS, DcMotorSimple.Direction.REVERSE);
@@ -150,43 +148,6 @@ public class MecanumDrive {
         COUNTS_PER_INCH_FORWARD         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
         T_angle = _telemetry.addData("HEading", getRobotHeading());
 
-    }
-
-
-
-
-    public double getSpeedFactor() {
-        return _SPEED_FACTOR;
-    }
-
-    public void setSpeedFactor(double SpeedFactor) {
-        this._SPEED_FACTOR = SpeedFactor;
-    }
-
-    public double getRotationRate() {
-        return _ROTATION_RATE;
-    }
-
-    public void setRotationRate(double RotationRate) {
-        this._ROTATION_RATE = RotationRate;
-    }
-
-    public double getRobotHeading() {
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
-    }
-
-    public void setRobotCentric(boolean robotCentric) {
-        this.robotCentric = robotCentric;
-    }
-    public boolean getRobotCentric() {
-        return robotCentric;
-    }
-
-    public void moveRect(double forward, double lateral, double rotate) {
-        //translate into polar and move accordingly.
-        movePolar(Math.hypot(forward,lateral),
-                Math.atan2(-forward,lateral),
-                rotate);
     }
 
     public void movePolar(double power, double angle, double rotate) {
@@ -210,6 +171,12 @@ public class MecanumDrive {
         T_angle.setValue(getRobotHeading());
     }
 
+    public void moveRect(double forward, double lateral, double rotate) {
+        //translate into polar and move accordingly.
+        movePolar(Math.hypot(forward,lateral),
+                Math.atan2(-forward,lateral),
+                rotate);
+    }
 
     public int [] readEncoders() {  // return the encoder values if there are encoder motors.
         if (_ENCODER_WHEELS != null && _ENCODER_WHEELS.length > 0 ) {
@@ -222,7 +189,39 @@ public class MecanumDrive {
         return null;
     }
 
+    public void setDirection(int [] wheels, DcMotorSimple.Direction dir) {
+        if (wheels != null && wheels.length != 0)
+            for (int wheel : wheels)
+                motors[wheel].setDirection(dir);
+
+    }
+
     public void setMotorSpeeds(double [] speeds) {
         for (int i=0; i< motors.length; i++) motors[i].setPower(Range.clip(speeds[i], -1, 1));
     }
+
+    public void setRobotCentric(boolean robotCentric) {
+        this.robotCentric = robotCentric;
+    }
+
+    public void setRotationRate(double RotationRate) {
+        this._ROTATION_RATE = RotationRate;
+    }
+
+    public void setRunMode(int [] wheels, DcMotor.RunMode mode) {
+        if (wheels != null && wheels.length != 0)
+            for (int wheel : wheels)
+                motors[wheel].setMode(mode);
+    }
+
+    public void setSpeedFactor(double SpeedFactor) {
+        this._SPEED_FACTOR = SpeedFactor;
+    }
+
+    public void setZeroPowerBehavior( int [] wheels, DcMotor.ZeroPowerBehavior behavior) {
+        if (wheels != null && wheels.length != 0)
+            for (int wheel : wheels)
+                motors[wheel].setZeroPowerBehavior(behavior);
+    }
+
 }

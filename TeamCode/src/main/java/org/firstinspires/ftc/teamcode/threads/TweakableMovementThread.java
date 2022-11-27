@@ -25,12 +25,12 @@ public class TweakableMovementThread extends RobotThread {
     FieldPosition _pos;
 
 
-    TweakableDouble _zone_lateral = new TweakableDouble("LateralZone",0.02, 0.1);
-    TweakableDouble _zone_forward =new TweakableDouble("ForwardZone", 0.02, 0.1 );
+    TweakableDouble _zone_lateral = new TweakableDouble("LateralZone",0.02, 0.2);
+    TweakableDouble _zone_forward =new TweakableDouble("ForwardZone", 0.02, 0.2 );
     TweakableDouble _zone_rotation =new TweakableDouble("RotateZone", 0.02, 0.1);
     TweakableDouble _ramp_rate =  new TweakableDouble("RampRate", 0.02, 1.5);
     TweakableBoolean _robot_centric = new TweakableBoolean("RobotCentricDrive", true);
-    TweakableDouble _fine_control = new TweakableDouble("FineControl", 0.05,0.2);
+    TweakableDouble _fine_control = new TweakableDouble("FineControl", 0.05,0.55);
     TweakableLong _debounce_delay_ms = new TweakableLong("Button Debounce Delay", 20, 150);
     TweakableDouble speed_factor = new TweakableDouble("Speed Factor",0.04,1.4);
     Tweakable _load_save = new Tweakable("<--LOAD / SAVE --") {
@@ -49,7 +49,7 @@ public class TweakableMovementThread extends RobotThread {
                 _fine_control.value  = Double.parseDouble(props.getProperty("_fine_control"));
             } catch (Exception ex) {
                 // something wrong here
-                _telemetry.log().add("Error loading config!" + config);
+                _telemetry.log().add("Error loading config!" + config+" "+ex.getMessage());
             }
         }
             @Override
@@ -81,7 +81,7 @@ public class TweakableMovementThread extends RobotThread {
 
 
     motorRampProfile _Joy1X, _Joy1Y, _Joy2X;
-    Telemetry.Item T_TWEAK;
+    Telemetry.Item T_TWEAK;//,T_RF,T_RR,T_LF,T_LR;
 
 
 
@@ -128,6 +128,7 @@ public class TweakableMovementThread extends RobotThread {
                 _load_save
         };
         T_TWEAK = _telemetry.addData("Tweak:", "%s", tweakables[current_tweakable].name+ " - " + tweakables[current_tweakable].toString());
+
     }
 
     int current_tweakable = 0;
@@ -173,7 +174,6 @@ public class TweakableMovementThread extends RobotThread {
                         _Joy2X.ramp(deadzone(_gamepad.right_stick_x, _zone_rotation.value),_ramp_rate.value)
                 );
             }
-
         }
     }
 

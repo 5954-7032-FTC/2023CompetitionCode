@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -40,16 +40,17 @@ public class LiftClaw extends RobotThread {
 
 
     // hardware objects
-    DcMotor[]  _DriveMotors;
+    DcMotor _DriveMotor;
     Servo[] _clawServos;
     Servo _pipe_guide;
     TouchSensor _bottomStopSensor;
     DistanceSensor _releaseSensor;
     Telemetry _telemetry;
+    Lights _light;
 
     //telemetry items
     Telemetry.Item _T_pos,_B_stop,_C_STAT,P_GUIDE;
-
+    long _clawOpenTime=0;
 
 
     //34.75" from bottom to top
@@ -64,13 +65,12 @@ public class LiftClaw extends RobotThread {
      4th 600
      5th 800
      */
-
-
-    public LiftClaw(DcMotor [] Motors, Servo [] servos, Servo pipe_guide, TouchSensor stop, DistanceSensor release,
-                    Telemetry telemetry, Gamepad gamepad) {
+    public LiftClaw(DcMotor Motor, Servo [] servos, Servo pipe_guide, TouchSensor stop,
+                    DistanceSensor release, Telemetry telemetry, Gamepad gamepad, Lights light) {
+        _light = light;
         _gamepad=gamepad;
         _telemetry = telemetry;
-        _DriveMotors = Motors;
+        _DriveMotor = Motor;
         _clawServos = new Servo[2];
         _pipe_guide = pipe_guide;
         for (int i = 0; i < servos.length; i++) {
@@ -79,32 +79,40 @@ public class LiftClaw extends RobotThread {
         }
 
         _C_STAT = telemetry.addData("Claw", "open");
-        ClawOpen();
-        ClawClose();
+        clawOpen();
+        clawClose();
         _bottomStopSensor = stop;
         _releaseSensor = release;
         _T_pos = telemetry.addData("Lift", 0);
         _B_stop = telemetry.addData("BSTOP", _bottomStopSensor.isPressed());
-        _DriveMotors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        _DriveMotors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        _DriveMotors[1].setDirection(DcMotorSimple.Direction.REVERSE);
+        _DriveMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         P_GUIDE = _telemetry.addData("PIPE GUIDE", "unknown");
         //Calibrate();
     }
 
+    public void calibrateLift() {
 
-    public void ClawOpen() {
-        _clawServos[CLAW_A].setPosition(_servo_pos_open);
-        _clawServos[CLAW_B].setPosition(1-_servo_pos_open);
-        _C_STAT.setValue("open");
+        pipeGuideUp();
+        setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        while (!_bottomStopSensor.isPressed()) {
+            _DriveMotor.setPower(-0.5);
+            //_DriveMotor.getCurrentPosition();
+        }
+        _DriveMotor.setPower(0);
+        resetEncoder();
     }
 
-    public void set_clawOpenTime(long _clawOpenTime) {
-        this._clawOpenTime = _clawOpenTime;
+    public boolean checkOptical() {
+        return (_releaseSensor.getDistance(DistanceUnit.MM) < 30);
     }
 
-    long _clawOpenTime=0;
-    public void ClawClose() {
+    public void checkPipe() {
+        long current = getEncoder();
+        if (current < GUIDE_UP_HEIGHT) pipeGuideUp();
+        if (current > GUIDE_DOWN_HEIGHT) pipeGuideDown();
+    }
+
+    public void clawClose() {
         if (System.currentTimeMillis() > _clawOpenTime+1500) {
             _clawServos[CLAW_A].setPosition(1 - _servo_pos_close);
             _clawServos[CLAW_B].setPosition(_servo_pos_close);
@@ -112,100 +120,102 @@ public class LiftClaw extends RobotThread {
         }
     }
 
+    public void clawOpen() {
+        _clawServos[CLAW_A].setPosition(_servo_pos_open);
+        _clawServos[CLAW_B].setPosition(1-_servo_pos_open);
+        _C_STAT.setValue("open");
+    }
+
+    public int getEncoder() {
+        return _DriveMotor.getCurrentPosition();
+    }
+
+    public void moveLift(double speed) { // move with the joystick
+        if (!_bottomStopSensor.isPressed()) {
+            _DriveMotor.setPower(Range.clip(-speed, -1, 1));
+        } else {
+            resetEncoder();
+            if (-speed > 0) {
+                _DriveMotor.setPower(Range.clip(-speed, -1, 1));
+            } else {
+                _DriveMotor.setPower(0);
+            }
+        }
+        checkPipe();
+        _T_pos.setValue(getEncoder());
+    }
+
     public void pipeGuideUp() {
-        _pipe_guide.setPosition(PIPE_GUIDE_OPEN);
+        //_pipe_guide.setPosition(PIPE_GUIDE_OPEN);
         P_GUIDE.setValue("UP");
     }
 
     public void pipeGuideDown() {
         if (System.currentTimeMillis() > _clawOpenTime+CLAW_GUIDE_WAIT+0.3) {
-            _pipe_guide.setPosition(PIPE_GUIDE_CLOSE);
+            //_pipe_guide.setPosition(PIPE_GUIDE_CLOSE);
             P_GUIDE.setValue("DOWN");
         }
     }
 
-    public int getEncoder() {
-        return _DriveMotors[0].getCurrentPosition();
-    }
+    public void placeCone() {
+        _DriveMotor.setPower(-1);
+        while (true) {
+            if (checkOptical()) break;
+            if (_DriveMotor.getCurrentPosition() < 100  || _DriveMotor.getCurrentPosition() > 5300) break;
 
-    public void SetMode(DcMotor.RunMode SMode) {
-        _DriveMotors[0].setMode(SMode);
-    }
-
-    public void Move(double move) { // move with the joystick
-        if (!_bottomStopSensor.isPressed()) {
-            _DriveMotors[0].setPower(Range.clip(-move, -1, 1));
-            _DriveMotors[1].setPower(Range.clip(-move, -1, 1));
-        } else {
-            reset_zero();
-            if (-move > 0) {
-                _DriveMotors[0].setPower(Range.clip(-move, -1, 1));
-                _DriveMotors[1].setPower(Range.clip(-move, -1, 1));
-            } else {
-                _DriveMotors[0].setPower(0);
-                _DriveMotors[1].setPower(0);
-            }
         }
+        clawOpen();
+        _DriveMotor.setPower(0);
+    }
+
+    public void resetEncoder() {
+        setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         _T_pos.setValue(getEncoder());
-    }
-
-    public void Calibrate() {
-
-        pipeGuideUp();
-        SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        while (!_bottomStopSensor.isPressed()) {
-            _DriveMotors[0].setPower(-0.5);
-            _DriveMotors[1].setPower(-0.5);
-            //_DriveMotor.getCurrentPosition();
-        }
-        _DriveMotors[0].setPower(0);
-        _DriveMotors[1].setPower(0);
-        reset_zero();
-    }
-
-    public void reset_zero() {
-        SetMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        _T_pos.setValue(getEncoder());
-    }
-
-
-    public boolean checkOptical() {
-        return (_releaseSensor.getDistance(DistanceUnit.MM) < 30);
     }
 
     public void runToPos(int target) {
-
         int current, last;
-       SetMode(DcMotor.RunMode.RUN_TO_POSITION);
-        _DriveMotors[0].setTargetPosition(target);
-        _DriveMotors[0].setPower( -Math.signum(getEncoder()-target) );
-        _DriveMotors[1].setPower( -Math.signum(getEncoder()-target) );
-        last = -1;
+        _DriveMotor.setTargetPosition(target);
+        setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        setPower(_DriveMotor, -Math.signum(getEncoder()-target));
+        last = -100;
+        ElapsedTime et = new ElapsedTime();
+        et.reset();
+        long start_time = System.currentTimeMillis();
         while (true) {
-            current = _DriveMotors[0].getCurrentPosition();
-            if (current == last) break;
+            current = _DriveMotor.getCurrentPosition();
+            checkPipe();
+
+            if ((System.currentTimeMillis() > start_time + 100) && (current == last)) {
+                _telemetry.log().add("current("+current+") == last("+last+")");
+                break;
+            }
             last = current;
-            if (!_DriveMotors[0].isBusy()) break;
-            if (!( _gamepad instanceof GamepadEmpty )) {
-                if (Math.abs(_gamepad.left_stick_y) > 0.1) break;
+            if (!_DriveMotor.isBusy()) {
+                _telemetry.log().add("motor is not busy");
+                break;
+            }
+            if (!( _gamepad instanceof GamepadEmpty ) && (Math.abs(_gamepad.left_stick_y) > 0.1)) {
+                _telemetry.log().add("GAMEPAD TRIGGERED A STOP?");
+                break;
             }
         }
-        _DriveMotors[0].setPower(0);
-        _DriveMotors[1].setPower(0);
-        SetMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
+        setPower(_DriveMotor,0);
+        setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
-    public void placeCone() {
-        _DriveMotors[0].setPower(-1);
-        _DriveMotors[1].setPower(-1);
-        while (true) {
-            if (checkOptical()) break;
-            if (_DriveMotors[0].getCurrentPosition() < 100  || _DriveMotors[0].getCurrentPosition() > 5300) break;
-
-        }
-        _DriveMotors[0].setPower(0);
-        _DriveMotors[1].setPower(0);
+    public void setClawOpenTime(long _clawOpenTime) {
+        this._clawOpenTime = _clawOpenTime;
     }
+
+    public void setMode(DcMotor.RunMode mode) {
+        _DriveMotor.setMode(mode);
+    }
+
+    public void setPower(DcMotor motor, double power) {
+        motor.setPower(power);
+    }
+
+
 }
