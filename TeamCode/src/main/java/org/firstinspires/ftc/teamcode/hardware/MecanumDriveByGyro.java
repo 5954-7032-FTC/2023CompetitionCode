@@ -96,8 +96,8 @@ public class MecanumDriveByGyro extends MecanumDrive {
         // Start driving straight, and then enter the control loop
 
         moveRobotDirection(DRIVE_SPEED, 0,direction);
-        _telemetry.addData("l"+logid, 0);
-        _telemetry.update();
+        //_telemetry.addData("l"+logid, 0);
+        //_telemetry.update();
 
         // keep looping while we are still active, and BOTH motors are running.
         while (leftIsBusy() && rightIsBusy()) {
@@ -107,8 +107,8 @@ public class MecanumDriveByGyro extends MecanumDrive {
 
             // Apply the turning correction to the current driving speed.
             moveRobotDirection(driveSpeed, turnSpeed, direction);
-            _telemetry.addData("l"+logid, "%2.2f %2.2f", driveSpeed, turnSpeed);
-            _telemetry.update();
+            //_telemetry.addData("l"+logid, "%2.2f %2.2f", driveSpeed, turnSpeed);
+            //_telemetry.update();
 
         }
 

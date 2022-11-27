@@ -30,7 +30,7 @@ public class TweakableMovementThread extends RobotThread {
     TweakableDouble _zone_rotation =new TweakableDouble("RotateZone", 0.02, 0.1);
     TweakableDouble _ramp_rate =  new TweakableDouble("RampRate", 0.02, 1.5);
     TweakableBoolean _robot_centric = new TweakableBoolean("RobotCentricDrive", true);
-    TweakableDouble _fine_control = new TweakableDouble("FineControl", 0.05,0.2);
+    TweakableDouble _fine_control = new TweakableDouble("FineControl", 0.05,0.55);
     TweakableLong _debounce_delay_ms = new TweakableLong("Button Debounce Delay", 20, 150);
     TweakableDouble speed_factor = new TweakableDouble("Speed Factor",0.04,1.4);
     Tweakable _load_save = new Tweakable("<--LOAD / SAVE --") {
