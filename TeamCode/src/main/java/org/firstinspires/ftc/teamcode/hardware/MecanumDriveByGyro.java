@@ -92,12 +92,10 @@ public class MecanumDriveByGyro extends MecanumDrive {
         setTargetPositions(moveCounts, direction);
 
         setRunMode(_ENCODER_WHEELS, DcMotor.RunMode.RUN_TO_POSITION);
-        // Set the required driving speed  (must be positive for RUN_TO_POSITION)
+        // Set the required driving speed  (must be positive? (nope) for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
 
         moveRobotDirection(DRIVE_SPEED, 0,direction);
-        //_telemetry.addData("l"+logid, 0);
-        //_telemetry.update();
 
         // keep looping while we are still active, and BOTH motors are running.
         while (leftIsBusy() && rightIsBusy()) {
@@ -107,8 +105,6 @@ public class MecanumDriveByGyro extends MecanumDrive {
 
             // Apply the turning correction to the current driving speed.
             moveRobotDirection(driveSpeed, turnSpeed, direction);
-            //_telemetry.addData("l"+logid, "%2.2f %2.2f", driveSpeed, turnSpeed);
-            //_telemetry.update();
 
         }
 
@@ -122,14 +118,18 @@ public class MecanumDriveByGyro extends MecanumDrive {
         return angles.firstAngle;
     }
 
+    public double getRobotHeading() {
+        return getRawHeading() - headingOffset;
+    }
+
     public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
         targetHeading = desiredHeading;  // Save for telemetry
 
         // Get the robot heading by applying an offset to the IMU heading
-        robotHeading = getRawHeading() - headingOffset;
+        //robotHeading = getRawHeading() - headingOffset;
 
         // Determine the heading current error
-        headingError = targetHeading - robotHeading;
+        headingError = targetHeading - getRobotHeading();
 
         // Normalize the error to be within +/- 180 degrees
         while (headingError > 180)  headingError -= 360;
@@ -169,7 +169,7 @@ public class MecanumDriveByGyro extends MecanumDrive {
         rotate *= direction[4];
         double [] wheelSpeeds = {
                 direction[0]*power - rotate,   // Front Right
-                direction[1]*power - rotate, // Rear Rights
+                direction[1]*power - rotate, // Rear Right
                 direction[2]*power + rotate,   // Rear Left
                 direction[3]*power + rotate  // Front Left
         };
