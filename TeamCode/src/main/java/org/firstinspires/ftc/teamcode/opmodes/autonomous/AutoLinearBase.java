@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
+import android.os.Handler;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
@@ -91,19 +93,76 @@ public abstract class AutoLinearBase extends LinearOpMode {
 
         // start moving the bot.
 
+        switch (side()) {
+            case LEFT_SIDE:
+                runLeft();
+                break;
+            case RIGHT_SIDE:
+                runRight();
+                break;
+        }
+    }
+
+    public void runLeft() throws InterruptedException {
         // first put the arm up.
         armRelease.release();
         _liftclaw.calibrateLift();
-        Thread.sleep(500);
+        Thread.sleep(1500);
         _liftclaw.runToPos(LiftClaw.LOW_POS);
 
         double forward_amount=0,
                 strafe_amount=0;
 
-        if (side() == RIGHT_SIDE) {
-            forward_amount = 2;
-            strafe_amount=0;
+        // move to the cone
+        strafeDirection(22); // should put us clearly on the cone
+        //get the place to end from the findMaxColor()
+        int place_to_end = getColorSensorDevice().findMaxColor();
+        telemetry.log().add("Place to end: "+place_to_end);
+        telemetry.update();
+        // now to move around a bit...
+        // place the first cone
+        strafeDirection(22.5);
+        driveForward(3);
+        placeCone(1200);
+        driveReverse(3);
+
+        // now get a new one.....
+        strafeDirection(10.5);
+        //turnRobot(0);
+        driveForward(24.5);
+
+        pickNextCone();
+        // place it on the pole
+        driveReverse(25);
+        strafeAntiDirection(10.5);
+        driveForward(3);
+        placeCone(1200);
+        driveReverse(3);
+
+        switch (place_to_end) {
+            case 1:
+                strafeDirection(14);
+                driveReverse(24);
+                break;
+            case 3:
+                strafeDirection(14);
+                driveForward(24);
+                break;
         }
+        turnRobot(turnDirection());
+        lightOff();
+        requestOpModeStop();
+    }
+
+    public void runRight() throws InterruptedException {
+        // first put the arm up.
+        armRelease.release();
+        _liftclaw.calibrateLift();
+        Thread.sleep(1500);
+        _liftclaw.runToPos(LiftClaw.LOW_POS);
+
+        double forward_amount=0,
+                strafe_amount=0;
 
         // move to the cone
         strafeDirection(22); // should put us clearly on the cone
@@ -114,47 +173,31 @@ public abstract class AutoLinearBase extends LinearOpMode {
         // now to move around a bit...
         // place the first cone
         strafeDirection(23.5);
-        driveForward(2+forward_amount);
+        driveForward(3);
         placeCone(1200);
-        driveReverse(2+forward_amount);
+        driveReverse(3);
 
         // now get a new one.....
-        strafeDirection(11);
+        strafeDirection(13.5);
         //turnRobot(0);
-        driveForward(23.5+forward_amount);
+        driveForward(26);
 
         pickNextCone();
         // place it on the pole
-        driveReverse(23.5+forward_amount);
-        strafeAntiDirection(11);
-        driveForward(2+forward_amount);
+        driveReverse(26);
+        strafeAntiDirection(13.5);
+        driveForward(3);
         placeCone(1200);
-        driveReverse(2+forward_amount);
+        driveReverse(3);
 
-        switch (side()) {
-            case LEFT_SIDE:
-                switch (place_to_end) {
-                    case 1:
-                        strafeDirection(11);
-                        driveForward(24);
-                        break;
-                    case 3:
-                        strafeDirection(11);
-                        driveReverse(24);
-                        break;
-                }
+        switch (place_to_end) {
+            case 1:
+                strafeDirection(14);
+                driveReverse(24);
                 break;
-            case RIGHT_SIDE:
-                switch (place_to_end) {
-                    case 1:
-                        strafeDirection(11);
-                        driveReverse(24);
-                        break;
-                    case 3:
-                        strafeDirection(11);
-                        driveForward(24);
-                        break;
-                }
+            case 3:
+                strafeDirection(14);
+                driveForward(24);
                 break;
         }
         turnRobot(turnDirection());
