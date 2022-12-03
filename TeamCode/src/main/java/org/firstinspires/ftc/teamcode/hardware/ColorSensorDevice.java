@@ -8,7 +8,7 @@ public class ColorSensorDevice {
 
     private int last_check=0;
 
-    private ColorSensor _colorSensor;
+    private final ColorSensor _colorSensor;
 
     public ColorSensorDevice(ColorSensor colorSensor) {
         _colorSensor = colorSensor;

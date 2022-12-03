@@ -8,11 +8,7 @@ public class LightBlue extends Lights {
     }
 
     public void on() {
-        this.blueon();
-    }
-
-    public void off() {
-        this.off();
+        this.blueOn();
     }
 
 }
