@@ -100,6 +100,7 @@ public class MecanumDrive {
         this._ENCODER_WHEELS = parameters._ENCODER_WHEELS;
         this._REVERSED_WHEELS = parameters._REVERSED_WHEELS;
         this._ROTATION_RATE = parameters._ROTATION_RATE;
+        this._SPEED_FACTOR = parameters._SPEED_FACTOR;
         this.motors = parameters.motors;
         this.robotCentric = parameters.robotCentric;
         this.imu = new ImuDevice(parameters.imu);
