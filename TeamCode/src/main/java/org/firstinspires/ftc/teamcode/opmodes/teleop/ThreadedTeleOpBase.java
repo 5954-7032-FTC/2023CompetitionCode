@@ -25,7 +25,7 @@ public abstract class ThreadedTeleOpBase extends OpMode {
     ArmRelease _armRelease;
     Lights _light;
 
-    Telemetry.Item _threadCount,_bot_cone;
+    Telemetry.Item _threadCount;//,_bot_cone;
     private BNO055IMU imu         = null;
     RobotDevices robotDevices;
 
@@ -45,25 +45,11 @@ public abstract class ThreadedTeleOpBase extends OpMode {
                 hardwareMap.dcMotor.get("D_FL")};
          */
 
-        bottom_cone = robotDevices.bottom_cone;
+        //bottom_cone = robotDevices.bottom_cone;
         imu = robotDevices.imu;
 
-        _move = new TweakableMovementThread(gamepad1, robotDevices.wheels, telemetry, imu, 500, true);
+        _move = new TweakableMovementThread(gamepad1, robotDevices.wheels, telemetry, imu, 500, false);
 
-
-        /*
-        // setup LiftClaw
-        final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
-        final Servo [] lift_servos = {
-                hardwareMap.servo.get("CLAW0"),
-                hardwareMap.servo.get("CLAW1")
-        };
-        final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-        final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
-
-
-        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
-        */
         _light = getLights();
 
         _liftclaw = new LiftClawThread(
@@ -77,7 +63,7 @@ public abstract class ThreadedTeleOpBase extends OpMode {
                 );
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
-        _bot_cone = telemetry.addData("Bottom_cone", bottom_cone.getDistanceMM());
+        //_bot_cone = telemetry.addData("Bottom_cone", bottom_cone.getDistanceMM());
 
         _armRelease =  new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
 
@@ -99,7 +85,7 @@ public abstract class ThreadedTeleOpBase extends OpMode {
         _light.on();
         _threadCount.setValue(Thread.activeCount());
 
-        _bot_cone.setValue(bottom_cone.getDistanceMM());
+        //_bot_cone.setValue(bottom_cone.getDistanceMM());
         telemetry.update();
         if (gamepad1.left_bumper) {
             _armRelease.set();

@@ -97,8 +97,8 @@ public class TweakableMovementThread extends RobotThread {
 
 
     public TweakableMovementThread(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry, BNO055IMU imu, long debounceDelayms, boolean includeTweaks) {
-        this.init(gamepad, motors, telemetry, imu,debounceDelayms);
         this.includeTweaks= includeTweaks;
+        this.init(gamepad, motors, telemetry, imu,debounceDelayms);
     }
 
     protected void init(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry, BNO055IMU imu, long debounceDelayms) {
@@ -121,11 +121,10 @@ public class TweakableMovementThread extends RobotThread {
         _Joy1X = new motorRampProfile(_ramp_rate.value);
         _Joy2X = new motorRampProfile(_ramp_rate.value);
 
-        init_tweaks(debounceDelayms);
+        if (includeTweaks) init_tweaks(debounceDelayms);
     }
 
     protected void init_tweaks(long debounceDelayms) {
-        if (includeTweaks) {
             dpad_left = new Debounce(debounceDelayms);
             dpad_right = new Debounce(debounceDelayms);
             dpad_up = new Debounce(debounceDelayms);
@@ -141,9 +140,8 @@ public class TweakableMovementThread extends RobotThread {
                     _fine_control,
                     _debounce_delay_ms,
                     _load_save
-            };
+                    };
             T_TWEAK = _telemetry.addData("Tweak:", "%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
-        }
     }
 
     int current_tweakable = 0;
@@ -152,38 +150,35 @@ public class TweakableMovementThread extends RobotThread {
     }
 
     protected void checkTweaks() {
-        if (includeTweaks) {
-            if (dpad_left.checkPress(_gamepad.dpad_left)) {
-                tweakables[current_tweakable].adjustDown();
-            }
-            if (dpad_right.checkPress(_gamepad.dpad_right)) {
-                tweakables[current_tweakable].adjustUp();
-            }
-            if (dpad_up.checkPress(_gamepad.dpad_up)) {
-                // move up the list
-                current_tweakable = current_tweakable == 0 ? tweakables.length - 1 : current_tweakable - 1;
-            }
-            if (dpad_down.checkPress(_gamepad.dpad_down)) {
-                //move down the list
-                current_tweakable = current_tweakable == tweakables.length - 1 ? 0 : current_tweakable + 1;
-            }
-
-            // print out the current value and it's name
-            T_TWEAK.setValue("%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
-
-            drive.setRobotCentric(_robot_centric.value);
-            dpad_up.set_debounceDelay(_debounce_delay_ms.value);
-            dpad_left.set_debounceDelay(_debounce_delay_ms.value);
-            dpad_right.set_debounceDelay(_debounce_delay_ms.value);
-            dpad_down.set_debounceDelay(_debounce_delay_ms.value);
-            drive.setSpeedFactor(speed_factor.value);
+        if (dpad_left.checkPress(_gamepad.dpad_left)) {
+            tweakables[current_tweakable].adjustDown();
+        }
+        if (dpad_right.checkPress(_gamepad.dpad_right)) {
+            tweakables[current_tweakable].adjustUp();
+        }
+        if (dpad_up.checkPress(_gamepad.dpad_up)) {
+            // move up the list
+            current_tweakable = current_tweakable == 0 ? tweakables.length - 1 : current_tweakable - 1;
+        }
+        if (dpad_down.checkPress(_gamepad.dpad_down)) {
+            //move down the list
+            current_tweakable = current_tweakable == tweakables.length - 1 ? 0 : current_tweakable + 1;
         }
 
+        // print out the current value and it's name
+        T_TWEAK.setValue("%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
+
+        drive.setRobotCentric(_robot_centric.value);
+        dpad_up.set_debounceDelay(_debounce_delay_ms.value);
+        dpad_left.set_debounceDelay(_debounce_delay_ms.value);
+        dpad_right.set_debounceDelay(_debounce_delay_ms.value);
+        dpad_down.set_debounceDelay(_debounce_delay_ms.value);
+        drive.setSpeedFactor(speed_factor.value);
     }
 
     public void run() {
         while (!isCancelled()) {
-            checkTweaks();
+            if (includeTweaks) checkTweaks();
             if (_gamepad.right_trigger > 0.2) {
                 drive.moveRect(
                         _Joy1Y.ramp(deadzone(_gamepad.left_stick_y*_fine_control.value,_zone_forward.value)),
@@ -191,7 +186,6 @@ public class TweakableMovementThread extends RobotThread {
                         _Joy2X.ramp(deadzone(_gamepad.right_stick_x* _fine_control.value,_zone_rotation.value))
                 );
             }
-
             else {
                 drive.moveRect(
                         _Joy1Y.ramp(deadzone(_gamepad.left_stick_y, _zone_forward.value)),

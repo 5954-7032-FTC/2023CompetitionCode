@@ -94,6 +94,7 @@ public abstract class AutoLinearBase extends LinearOpMode {
         // first put the arm up.
         armRelease.release();
         _liftclaw.calibrateLift();
+        Thread.sleep(500);
         _liftclaw.runToPos(LiftClaw.LOW_POS);
 
         double forward_amount=0,
