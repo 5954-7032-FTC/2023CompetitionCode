@@ -8,8 +8,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.hardware.DistanceSensorDevice;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
+import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
 import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
 import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
@@ -22,25 +25,33 @@ public abstract class ThreadedTeleOpBase extends OpMode {
     ArmRelease _armRelease;
     Lights _light;
 
-    Telemetry.Item _threadCount;
+    Telemetry.Item _threadCount,_bot_cone;
     private BNO055IMU imu         = null;
+    RobotDevices robotDevices;
+
+    DistanceSensorDevice bottom_cone;
 
     @Override
     public void init() {
         telemetry.setAutoClear(false);
 
+        robotDevices =  RobotDevices.getDevices(hardwareMap);
         // set up MovementThread
+        /*
         final DcMotor [] motors = {
                 hardwareMap.dcMotor.get("D_FR"),
                 hardwareMap.dcMotor.get("D_RR"),
                 hardwareMap.dcMotor.get("D_RL"),
                 hardwareMap.dcMotor.get("D_FL")};
+         */
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        bottom_cone = robotDevices.bottom_cone;
+        imu = robotDevices.imu;
 
-        _move = new TweakableMovementThread(gamepad1, motors,telemetry,imu,500);
+        _move = new TweakableMovementThread(gamepad1, robotDevices.wheels, telemetry, imu, 500, true);
 
 
+        /*
         // setup LiftClaw
         final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
         final Servo [] lift_servos = {
@@ -52,20 +63,21 @@ public abstract class ThreadedTeleOpBase extends OpMode {
 
 
         final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
+        */
         _light = getLights();
 
         _liftclaw = new LiftClawThread(
-                lift_motor,
-                lift_servos,
-                pipe_guide,
-                bottom_stop,
-                post_sensor,
+                robotDevices.lift_motor,
+                robotDevices.lift_servos,
+                robotDevices.bottom_stop,
+                robotDevices.post_sensor,
                 telemetry,
                 gamepad2,
                 _light
                 );
 
         _threadCount = telemetry.addData("Threads", Thread.activeCount());
+        _bot_cone = telemetry.addData("Bottom_cone", bottom_cone.getDistanceMM());
 
         _armRelease =  new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
 
@@ -86,6 +98,8 @@ public abstract class ThreadedTeleOpBase extends OpMode {
     public void loop() {
         _light.on();
         _threadCount.setValue(Thread.activeCount());
+
+        _bot_cone.setValue(bottom_cone.getDistanceMM());
         telemetry.update();
         if (gamepad1.left_bumper) {
             _armRelease.set();

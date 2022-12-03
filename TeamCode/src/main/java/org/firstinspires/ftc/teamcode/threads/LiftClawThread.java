@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.threads;
 
 import com.qualcomm.robotcore.hardware.*;
 import org.firstinspires.ftc.robotcore.external.*;
+import org.firstinspires.ftc.teamcode.hardware.DistanceSensorDevice;
 import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
 
@@ -13,11 +14,16 @@ public class LiftClawThread extends RobotThread {
 
     Lights _light;
 
-    public LiftClawThread(DcMotor Motor, Servo [] servos, Servo pipe_guide, TouchSensor stop, DistanceSensor release,
+    public LiftClawThread( LiftClaw.LiftClawParameters parameters, Lights light) {
+        _claw = new LiftClaw(parameters);
+        _gamepad = parameters.gamepad;
+        _light = light;
+    }
+
+    public LiftClawThread(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensorDevice release,
                           Telemetry telemetry, Gamepad gamepad, Lights light) {
         _gamepad=gamepad;
-        _claw = new LiftClaw(Motor,servos,pipe_guide,stop,release,telemetry,gamepad,light);
-
+        _claw = new LiftClaw(Motor,servos,stop,release,telemetry,gamepad,light);
         _light = light;
         //Calibrate();
     }
@@ -27,7 +33,7 @@ public class LiftClawThread extends RobotThread {
         while (!isCancelled()) {
             //lift movement
             if (_claw.checkOptical()) {
-                //_light.blink();
+                _light.blinkOnce(300);
                 _claw.setClawOpenTime(System.currentTimeMillis());
                 _claw.clawOpen();
             }
@@ -50,18 +56,6 @@ public class LiftClawThread extends RobotThread {
             }
             if (_gamepad.y) {
                 _claw.runToPos(LiftClaw.HIGH_POS);
-            }
-
-            long pos = _claw.getEncoder();
-
-            if (_gamepad.left_bumper) _claw.pipeGuideUp();
-            else
-            if (_gamepad.right_bumper) _claw.pipeGuideDown();
-            else {
-                if (pos < LiftClaw.GUIDE_UP_HEIGHT)
-                    _claw.pipeGuideUp();
-                if (pos > LiftClaw.GUIDE_DOWN_HEIGHT)
-                    _claw.pipeGuideDown();
             }
         }
     }
