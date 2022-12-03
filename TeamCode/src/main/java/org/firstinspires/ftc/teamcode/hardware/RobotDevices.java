@@ -39,15 +39,7 @@ public class RobotDevices {
     }
 
     private RobotDevices(HardwareMap hardwareMap) {
-        //cone_detector = hardwareMap.colorSensor.get("CONE");
 
-        /*
-        lineFollowers = new LineFollowerSensors(new NormalizedColorSensor[] {
-                hardwareMap.get(NormalizedColorSensor.class,"L_LINE"),
-                hardwareMap.get(NormalizedColorSensor.class,"R_LINE")
-        });
-
-        */
 
         colorSensorRight = hardwareMap.colorSensor.get("RIGHT_COLOR");
         colorSensorLeft = hardwareMap.colorSensor.get("LEFT_COLOR");
@@ -65,8 +57,6 @@ public class RobotDevices {
         };
         bottom_stop = hardwareMap.touchSensor.get("BSTOP");
         post_sensor = new DistanceSensorDevice(hardwareMap.get(DistanceSensor.class, "C_STOP"));
-        //bottom_cone = new DistanceSensorDevice(hardwareMap.get(DistanceSensor.class, "BOT_CONE"));
-        //pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
         arm_release = new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
     }
 }
