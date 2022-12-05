@@ -3,8 +3,8 @@ package org.firstinspires.ftc.teamcode.hardware;
 import com.qualcomm.robotcore.hardware.Servo;
 
 public class ArmRelease {
-    private final double RELEASE_POS = 0.85;
-    private final double SET_POS = 0.2;
+    private static final double RELEASE_POS = 0.85;
+    private static final double SET_POS = 0.2;
     private final Servo _arm_release;
 
     public ArmRelease(Servo arm_release) {

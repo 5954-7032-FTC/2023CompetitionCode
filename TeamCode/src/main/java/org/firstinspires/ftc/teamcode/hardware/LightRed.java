@@ -8,11 +8,7 @@ public class LightRed extends Lights {
     }
 
     public void on() {
-        this.redon();
-    }
-
-    public void off() {
-        this.off();
+        this.redOn();
     }
 
 }

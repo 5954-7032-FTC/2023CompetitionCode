@@ -1,11 +1,24 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import org.firstinspires.ftc.teamcode.hardware.*;
+
+import org.firstinspires.ftc.teamcode.hardware.ColorSensorDevice;
+import org.firstinspires.ftc.teamcode.hardware.LightRed;
+import org.firstinspires.ftc.teamcode.hardware.Lights;
 import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
 
-@Autonomous(name = "Left-RED")
-public class GyroLinearLeftRed extends GyroLinearBase {
+@Autonomous(name = "Auto-Left-RED")
+public class AutoLeftRed extends AutoLinearBase {
+    @Override
+    public int side() {
+        return LEFT_SIDE;
+    }
+
+    @Override
+    public double turnDirection() {
+        return this.LEFT;
+    }
+
     @Override
     public void transitionOnStop() {
         AutoTransitioner.transitionOnStop(this, "TeleOpRed");
@@ -27,7 +40,7 @@ public class GyroLinearLeftRed extends GyroLinearBase {
 
     @Override
     public void lightOn() {
-        light.redon();
+        light.redOn();
     }
 
     @Override

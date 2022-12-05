@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
@@ -9,11 +8,25 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.threads.RobotThread;
 import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
 public class LiftClaw extends RobotThread {
+
+    public class LiftClawParameters {
+        public Gamepad gamepad = new GamepadEmpty();
+        // hardware objects
+        public DcMotor DriveMotor;
+        public Servo[] clawServos;
+        //Servo pipe_guide;
+        public TouchSensor bottomStopSensor;
+        public DistanceSensorDevice releaseSensor;
+        public Telemetry telemetry;
+        public Lights light;
+
+        //telemetry items
+        Telemetry.Item T_pos,B_stop,C_STAT,P_GUIDE;
+    }
     private final Gamepad _gamepad;
     //constants
     final static double _servo_pos_open = 0;
@@ -23,14 +36,7 @@ public class LiftClaw extends RobotThread {
     public final static int MEDIUM_POS = 3600;
     public final static int HIGH_POS = 5475;
 
-    public final static double PIPE_GUIDE_OPEN = 0.95;
-    public final static double PIPE_GUIDE_CLOSE =0.0;
-    final static long CLAW_GUIDE_WAIT=2000;
-
-    public final static int GUIDE_UP_HEIGHT=2400;
-    public final static int GUIDE_DOWN_HEIGHT=3500;
-
-    public final static int STACK_TOP=1540;
+    //public final static int STACK_TOP=1540;
     public final static int STACK_TOP_PICKUP=800;
     public final static int STACK_INCREMENT=200;
 
@@ -42,9 +48,9 @@ public class LiftClaw extends RobotThread {
     // hardware objects
     DcMotor _DriveMotor;
     Servo[] _clawServos;
-    Servo _pipe_guide;
+    //Servo _pipe_guide;
     TouchSensor _bottomStopSensor;
-    DistanceSensor _releaseSensor;
+    DistanceSensorDevice _releaseSensor;
     Telemetry _telemetry;
     Lights _light;
 
@@ -65,14 +71,25 @@ public class LiftClaw extends RobotThread {
      4th 600
      5th 800
      */
-    public LiftClaw(DcMotor Motor, Servo [] servos, Servo pipe_guide, TouchSensor stop,
-                    DistanceSensor release, Telemetry telemetry, Gamepad gamepad, Lights light) {
+
+    public LiftClaw(LiftClawParameters parameters) {
+        _light = parameters.light;
+        _gamepad = parameters.gamepad;
+        _DriveMotor = parameters.DriveMotor;
+        _clawServos = parameters.clawServos;
+        _telemetry = parameters.telemetry;
+        //_pipe_guide = parameters.pipe_guide;
+        _bottomStopSensor = parameters.bottomStopSensor;
+        _releaseSensor = parameters.releaseSensor;
+    }
+    public LiftClaw(DcMotor Motor, Servo [] servos, TouchSensor stop,
+                    DistanceSensorDevice release, Telemetry telemetry, Gamepad gamepad, Lights light) {
         _light = light;
         _gamepad=gamepad;
         _telemetry = telemetry;
         _DriveMotor = Motor;
         _clawServos = new Servo[2];
-        _pipe_guide = pipe_guide;
+        //_pipe_guide = pipe_guide;
         for (int i = 0; i < servos.length; i++) {
             servos[i].setDirection(Servo.Direction.FORWARD);
             _clawServos[i] = servos[i];
@@ -92,7 +109,6 @@ public class LiftClaw extends RobotThread {
 
     public void calibrateLift() {
 
-        pipeGuideUp();
         setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         while (!_bottomStopSensor.isPressed()) {
             _DriveMotor.setPower(-0.5);
@@ -103,14 +119,9 @@ public class LiftClaw extends RobotThread {
     }
 
     public boolean checkOptical() {
-        return (_releaseSensor.getDistance(DistanceUnit.MM) < 30);
+        return (_releaseSensor.checkDistanceMM(30));
     }
 
-    public void checkPipe() {
-        long current = getEncoder();
-        if (current < GUIDE_UP_HEIGHT) pipeGuideUp();
-        if (current > GUIDE_DOWN_HEIGHT) pipeGuideDown();
-    }
 
     public void clawClose() {
         if (System.currentTimeMillis() > _clawOpenTime+1500) {
@@ -141,20 +152,7 @@ public class LiftClaw extends RobotThread {
                 _DriveMotor.setPower(0);
             }
         }
-        checkPipe();
         _T_pos.setValue(getEncoder());
-    }
-
-    public void pipeGuideUp() {
-        //_pipe_guide.setPosition(PIPE_GUIDE_OPEN);
-        P_GUIDE.setValue("UP");
-    }
-
-    public void pipeGuideDown() {
-        if (System.currentTimeMillis() > _clawOpenTime+CLAW_GUIDE_WAIT+0.3) {
-            //_pipe_guide.setPosition(PIPE_GUIDE_CLOSE);
-            P_GUIDE.setValue("DOWN");
-        }
     }
 
     public void placeCone() {
@@ -168,6 +166,23 @@ public class LiftClaw extends RobotThread {
         _DriveMotor.setPower(0);
     }
 
+    public void placeCone(long pos) {
+        _DriveMotor.setPower(-1);
+        while (true) {
+            if (checkOptical()) break;
+            if (_DriveMotor.getCurrentPosition() < pos  || _DriveMotor.getCurrentPosition() > 5300) {
+                clawOpen();
+                break;
+            }
+
+        }
+        clawOpen();
+        _DriveMotor.setPower(0);
+    }
+
+
+
+
     public void resetEncoder() {
         setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -175,18 +190,20 @@ public class LiftClaw extends RobotThread {
     }
 
     public void runToPos(int target) {
+        runToPos(target,1.0);
+    }
+
+    public void runToPos(int target, double speed) {
         int current, last;
         _DriveMotor.setTargetPosition(target);
         setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        setPower(_DriveMotor, -Math.signum(getEncoder()-target));
+        setPower(_DriveMotor, -(Math.signum(getEncoder()-target)*speed));
         last = -100;
         ElapsedTime et = new ElapsedTime();
         et.reset();
         long start_time = System.currentTimeMillis();
         while (true) {
             current = _DriveMotor.getCurrentPosition();
-            checkPipe();
-
             if ((System.currentTimeMillis() > start_time + 100) && (current == last)) {
                 _telemetry.log().add("current("+current+") == last("+last+")");
                 break;

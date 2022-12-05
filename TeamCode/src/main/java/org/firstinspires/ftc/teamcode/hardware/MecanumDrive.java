@@ -20,6 +20,8 @@ public class MecanumDrive {
         public double     WHEEL_DIAMETER_INCHES   = 96/25.4 ;     // For figuring circumference
         public double  COUNTS_PER_INCH_FORWARD = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
+        public double ROBOT_DIAMETER_IN = 13;
+        public double COUNTS_PER_ROTATE = (ROBOT_DIAMETER_IN * Math.PI)*COUNTS_PER_INCH_FORWARD;
         // These constants define the desired driving/control characteristics
         // They can/should be tweaked to suit the specific robot drive train.
         public double     DRIVE_SPEED             = 0.4;     // Max driving speed for better distance accuracy.
@@ -29,7 +31,7 @@ public class MecanumDrive {
         // Define the Proportional control coefficient (or GAIN) for "heading control".
         // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
         // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
-        // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
+        // Decrease these numbers if the heading does not settle on the correct value
         public double     P_TURN_GAIN            = 0.02;     // Larger is more responsive, but also less stable
         //maybe only use one of these.
         public double     P_DRIVE_GAIN           = 0.03;     // Larger is more responsive, but also less stable
@@ -49,12 +51,15 @@ public class MecanumDrive {
 
     protected double _ROBOT_INCHES_FRONT;
     protected double _INCHES_PER_METER;
-    protected BNO055IMU imu;
+    //protected BNO055IMU imu;
+    protected ImuDevice imu;
     protected double     COUNTS_PER_MOTOR_REV;   // 1120 per revolution
     protected double     DRIVE_GEAR_REDUCTION; //   3/4
     protected double     WHEEL_DIAMETER_INCHES;     // For figuring circumference
     protected double     COUNTS_PER_INCH_FORWARD;
 
+    protected double ROBOT_DIAMETER;
+    protected double COUNTS_PER_ROTATE;
     // These constants define the desired driving/control characteristics
     // They can/should be tweaked to suit the specific robot drive train.
     protected double     DRIVE_SPEED;     // Max driving speed for better distance accuracy.
@@ -64,7 +69,7 @@ public class MecanumDrive {
     // Define the Proportional control coefficient (or GAIN) for "heading control".
     // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
     // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
-    // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
+    // Decrease these numbers if the heading does not settle on the correct value
     protected double     P_TURN_GAIN;     // Larger is more responsive, but also less stable
     //maybe only use one of these.
     protected double     P_DRIVE_GAIN;     // Larger is more responsive, but also less stable
@@ -84,6 +89,8 @@ public class MecanumDrive {
         this.DRIVE_GEAR_REDUCTION = parameters.DRIVE_GEAR_REDUCTION;
         this.WHEEL_DIAMETER_INCHES = parameters.WHEEL_DIAMETER_INCHES;
         this.COUNTS_PER_INCH_FORWARD = parameters.COUNTS_PER_INCH_FORWARD;
+        this.ROBOT_DIAMETER = parameters.ROBOT_DIAMETER_IN;
+        this.COUNTS_PER_ROTATE = parameters.COUNTS_PER_ROTATE;
         this.DRIVE_SPEED = parameters.DRIVE_SPEED;
         this.TURN_SPEED = parameters.TURN_SPEED;
         this.HEADING_THRESHOLD = parameters.HEADING_THRESHOLD;
@@ -92,13 +99,11 @@ public class MecanumDrive {
         this._FREE_WHEELS = parameters._FREE_WHEELS;
         this._ENCODER_WHEELS = parameters._ENCODER_WHEELS;
         this._REVERSED_WHEELS = parameters._REVERSED_WHEELS;
+        this._ROTATION_RATE = parameters._ROTATION_RATE;
+        this._SPEED_FACTOR = parameters._SPEED_FACTOR;
         this.motors = parameters.motors;
         this.robotCentric = parameters.robotCentric;
-        this.imu = parameters.imu;
-        this._ROTATION_RATE =parameters._ROTATION_RATE;
-        this._SPEED_FACTOR = parameters._SPEED_FACTOR;
-        this._INCHES_PER_METER = parameters._INCHES_PER_METER;
-        this._ROBOT_INCHES_FRONT = parameters._ROBOT_INCHES_FRONT;
+        this.imu = new ImuDevice(parameters.imu);
         this._telemetry = parameters.telemetry;
         initAutoMecanum();
 
@@ -118,17 +123,11 @@ public class MecanumDrive {
         return _ROTATION_RATE;
     }
 
-    public double getRobotHeading() {
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
-    }
-
     public double getSpeedFactor() {
         return _SPEED_FACTOR;
     }
 
     protected void initAutoMecanum() {
-        //set up wheels that are encoderless
-
         setRunMode(_FREE_WHEELS, DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         setRunMode(_ENCODER_WHEELS, DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -138,15 +137,9 @@ public class MecanumDrive {
 
         setZeroPowerBehavior(new int[]{0,1,2,3},DcMotor.ZeroPowerBehavior.BRAKE);
 
-        //IMU init:
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit            = BNO055IMU.AngleUnit.DEGREES;
-        parameters.calibrationDataFile = SensorBNO055IMUCalibration.Calibration_filename;
-        parameters.accelUnit            = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.mode                 = BNO055IMU.SensorMode.IMU;
-        imu.initialize(parameters);
+
         COUNTS_PER_INCH_FORWARD         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
-        T_angle = _telemetry.addData("HEading", getRobotHeading());
+        T_angle = _telemetry.addData("Heading", imu.getHeading());
 
     }
 
@@ -154,7 +147,7 @@ public class MecanumDrive {
         angle -= PI_OVER4;
         if (! robotCentric ) {
             //make this robot drive in a field centric way.
-            angle -= getRobotHeading();
+            angle -= imu.getHeading();
         }
         rotate *= _ROTATION_RATE;
         double sine  = Math.sin(angle);
@@ -168,7 +161,7 @@ public class MecanumDrive {
                 scale * (power * cosine + rotate)  // Front Left
         };
         setMotorSpeeds(wheelSpeeds);
-        T_angle.setValue(getRobotHeading());
+        T_angle.setValue(imu.getHeading());
     }
 
     public void moveRect(double forward, double lateral, double rotate) {

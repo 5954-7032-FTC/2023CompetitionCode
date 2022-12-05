@@ -6,7 +6,7 @@ import org.firstinspires.ftc.teamcode.hardware.Lights;
 
 
 //threaded tele op controller......
-@TeleOp(name = "TeleOpRed")
+@TeleOp(name = "TeleOp-Red")
 public class ThreadedTeleOpRed extends ThreadedTeleOpBase {
     @Override
     public Lights getLights() {

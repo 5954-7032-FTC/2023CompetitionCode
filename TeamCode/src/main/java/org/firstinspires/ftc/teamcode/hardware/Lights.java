@@ -2,34 +2,61 @@ package org.firstinspires.ftc.teamcode.hardware;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 public abstract class Lights {
 
     DcMotor lights;
+    private static final long blink_min=1200; //1 second minimum blink time so no more than once every 1.2 seconds.
+    private long last_blink_time=-1;
+    Timer blink_timer;
 
     public Lights(DcMotor lights) {
         this.lights = lights;
     }
 
-    public void redon() {
-        lights.setPower(1);
-    }
-    public void blueon() {
-        lights.setPower(-1);
-    }
-
-    private long blink_min=1000; //500 milliseconds
-
-    private long last_blink_time=-1;
-    public void blink() {
+    public void blinkOnce(long offtime) {
         if (System.currentTimeMillis() > last_blink_time + blink_min) {
             off();
-            on();
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    on();
+                }
+            },offtime);
+            //on();
             last_blink_time = System.currentTimeMillis();
         }
 
     }
+
+    public void blinkEvery(long millis) {
+        blink_timer = new Timer();
+        blink_timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                blinkOnce(millis);
+            }
+        },0,millis);
+    }
+
+    public void blinkStop() {
+        blink_timer.cancel();
+    }
+
+    public void blueOn() {
+        lights.setPower(-1);
+    }
+
     public void off() {
         lights.setPower(0);
     }
+
     public abstract void on();
+
+    public void redOn() {
+        lights.setPower(1);
+    }
+
 }

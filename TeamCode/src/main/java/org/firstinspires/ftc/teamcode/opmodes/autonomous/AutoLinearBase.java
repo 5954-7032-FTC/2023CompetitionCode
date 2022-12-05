@@ -1,13 +1,8 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
+import android.os.Handler;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
 import org.firstinspires.ftc.teamcode.hardware.ColorSensorDevice;
@@ -15,112 +10,108 @@ import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
+import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
 import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
-public abstract class GyroLinearBase extends LinearOpMode {
+public abstract class AutoLinearBase extends LinearOpMode {
 
     protected static final int HOLD_TIME = 1;
     protected int current_stack_height=LiftClaw.STACK_TOP_PICKUP;
+
+    protected RobotDevices robotDevices;
     protected LiftClaw _liftclaw;
     protected ArmRelease armRelease;
 
     protected MecanumDriveByGyro _move;
 
-    protected DcMotor [] motors;
 
     protected Lights light;
 
-    final double LEFT=-90;
-    final double RIGHT=90;
+    protected final double LEFT=-90;
+    protected final double RIGHT=90;
+    protected static final int LEFT_SIDE=1;
+    protected static final int RIGHT_SIDE=2;
 
-    protected ColorSensorDevice colorSensorDevice;
     protected ColorSensorDevice colorSensorDeviceLeft, colorSensorDeviceRight;
 
 
     public abstract ColorSensorDevice getColorSensorDevice();
     public abstract void strafeDirection(double distance);
     public abstract void strafeAntiDirection(double distance);
+    public abstract double turnDirection();
     public abstract void lightOn();
     public abstract void transitionOnStop();
+    public abstract int side();
 
     public abstract Lights getLight();
-    public void initGyroLinearBase() {
+
+    @Override
+    public void runOpMode() throws InterruptedException {
         telemetry.setAutoClear(false);
+
+        robotDevices = RobotDevices.getDevices(hardwareMap);
+
 
         light = getLight();// new Lights(hardwareMap.dcMotor.get("LIGHTS"));
 
         // set up MovementThread
 
-        colorSensorDeviceRight = new ColorSensorDevice(hardwareMap.colorSensor.get("RIGHT_COLOR"));
-        colorSensorDeviceLeft = new ColorSensorDevice(hardwareMap.colorSensor.get("LEFT_COLOR"));
+        colorSensorDeviceLeft = new ColorSensorDevice(robotDevices.colorSensorLeft);
+        colorSensorDeviceRight = new ColorSensorDevice(robotDevices.colorSensorRight);
 
-        motors = new DcMotor[]{
-                hardwareMap.dcMotor.get("D_FR"),
-                hardwareMap.dcMotor.get("D_RR"),
-                hardwareMap.dcMotor.get("D_RL"),
-                hardwareMap.dcMotor.get("D_FL")
-        };
         MecanumDrive.Parameters driveParameters = new MecanumDrive.Parameters();
-        driveParameters.motors = motors;
+        driveParameters.motors = robotDevices.wheels;
         driveParameters._ENCODER_WHEELS = new int[]{0, 1, 2, 3};
         driveParameters._REVERSED_WHEELS = new int[]{2, 3};
         driveParameters.robotCentric = true;
-        driveParameters.imu = hardwareMap.get(BNO055IMU.class, "imu");
+        driveParameters.imu = robotDevices.imu;
         driveParameters.telemetry = telemetry;
         _move = new MecanumDriveByGyro(driveParameters);
 
         // setup LiftClaw
-        final DcMotor lift_motor = hardwareMap.dcMotor.get("LIFT");
-        final Servo[] lift_servos = {
-                hardwareMap.servo.get("CLAW0"),
-                hardwareMap.servo.get("CLAW1")
-        };
-        final TouchSensor bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-        final DistanceSensor post_sensor = hardwareMap.get(DistanceSensor.class, "C_STOP");
-
-
-        final Servo pipe_guide = hardwareMap.servo.get("PIPE_GUIDE");
-
         _liftclaw = new LiftClaw(
-                lift_motor,
-                lift_servos,
-                pipe_guide,
-                bottom_stop,
-                post_sensor,
+                robotDevices.lift_motor,
+                robotDevices.lift_servos,
+                //robotDevices.pipe_guide,
+                robotDevices.bottom_stop,
+                robotDevices.post_sensor,
                 telemetry,
                 new GamepadEmpty(),
                 light
         );
 
-        armRelease = new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
+        armRelease = robotDevices.arm_release;
 
         //transitionOnStop();
 
-        double maxConfidence = -1;
-        String maxLabel = null;
         _move.resetHeading();
 
-    }
-
-    //TensorFlow tensorFlow;
-    @Override
-    public void runOpMode() throws InterruptedException {
-
-        initGyroLinearBase();
 
         waitForStart();
-
-        ElapsedTime timer = new ElapsedTime();
 
         lightOn();
 
         // start moving the bot.
 
+        switch (side()) {
+            case LEFT_SIDE:
+                runLeft();
+                break;
+            case RIGHT_SIDE:
+                runRight();
+                break;
+        }
+    }
+
+    public void runLeft() throws InterruptedException {
         // first put the arm up.
         armRelease.release();
         _liftclaw.calibrateLift();
-        _liftclaw.runToPos(2300);
+        Thread.sleep(1500);
+        _liftclaw.runToPos(LiftClaw.LOW_POS);
 
+        double forward_amount=0,
+                strafe_amount=0;
 
         // move to the cone
         strafeDirection(22); // should put us clearly on the cone
@@ -130,39 +121,88 @@ public abstract class GyroLinearBase extends LinearOpMode {
         telemetry.update();
         // now to move around a bit...
         // place the first cone
-        strafeDirection(23);
+        strafeDirection(22.5);
         driveForward(3);
-        placeCone();
+        placeCone(1200);
         driveReverse(3);
 
         // now get a new one.....
-        strafeDirection(14);
+        strafeDirection(10.5);
         //turnRobot(0);
-        driveForward(25);
+        driveForward(24.5);
 
         pickNextCone();
         // place it on the pole
         driveReverse(25);
-        strafeAntiDirection(14);
+        strafeAntiDirection(10.5);
         driveForward(3);
-        placeCone();
+        placeCone(1200);
         driveReverse(3);
 
         switch (place_to_end) {
             case 1:
                 strafeDirection(14);
-                driveForward(25);
-                break;
-            case 2:
-                // already there!
+                driveReverse(24);
                 break;
             case 3:
                 strafeDirection(14);
-                driveReverse(24);
+                driveForward(24);
                 break;
         }
-        turnRobot(LEFT);
+        turnRobot(turnDirection());
         lightOff();
+        requestOpModeStop();
+    }
+
+    public void runRight() throws InterruptedException {
+        // first put the arm up.
+        armRelease.release();
+        _liftclaw.calibrateLift();
+        Thread.sleep(1500);
+        _liftclaw.runToPos(LiftClaw.LOW_POS);
+
+        double forward_amount=0,
+                strafe_amount=0;
+
+        // move to the cone
+        strafeDirection(22); // should put us clearly on the cone
+        //get the place to end from the findMaxColor()
+        int place_to_end = getColorSensorDevice().findMaxColor();
+        telemetry.log().add("Place to end: "+place_to_end);
+        telemetry.update();
+        // now to move around a bit...
+        // place the first cone
+        strafeDirection(23.5);
+        driveForward(3);
+        placeCone(1200);
+        driveReverse(3);
+
+        // now get a new one.....
+        strafeDirection(13.5);
+        //turnRobot(0);
+        driveForward(26);
+
+        pickNextCone();
+        // place it on the pole
+        driveReverse(26);
+        strafeAntiDirection(13.5);
+        driveForward(3);
+        placeCone(1200);
+        driveReverse(3);
+
+        switch (place_to_end) {
+            case 1:
+                strafeDirection(14);
+                driveReverse(24);
+                break;
+            case 3:
+                strafeDirection(14);
+                driveForward(24);
+                break;
+        }
+        turnRobot(turnDirection());
+        lightOff();
+        requestOpModeStop();
     }
 
     public void driveForward(double distanceInches) {
@@ -183,7 +223,7 @@ public abstract class GyroLinearBase extends LinearOpMode {
 
     public void lightOff() {
         light.off();
-    };
+    }
 
     public void pickNextCone() {
         _liftclaw.clawClose();
@@ -192,14 +232,17 @@ public abstract class GyroLinearBase extends LinearOpMode {
         updateStackHeight();
     }
 
-    public void placeCone() {
+    public void placeCone(long pos) {
+        _liftclaw.clawOpen();
+        /*
         _liftclaw.placeCone();
         _liftclaw.clawOpen();
         _liftclaw.runToPos(LiftClaw.LOW_POS);
+         */
     }
 
     public void turnRobot(double direction) {
-        _move.turnRobot(direction,HOLD_TIME);
+        //_move.turnRobot(direction,HOLD_TIME);
     }
 
     public void updateStackHeight() {
