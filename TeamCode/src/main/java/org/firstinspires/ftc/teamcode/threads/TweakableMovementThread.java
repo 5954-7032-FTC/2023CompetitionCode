@@ -106,7 +106,6 @@ public class TweakableMovementThread extends RobotThread {
         this._telemetry = telemetry;
 
         MecanumDrive.Parameters driveParameters = new MecanumDrive.Parameters();
-        driveParameters.imu = imu;
         driveParameters.telemetry = telemetry;
         driveParameters.motors = motors;
         driveParameters._ENCODER_WHEELS = new int[]{};
@@ -168,7 +167,6 @@ public class TweakableMovementThread extends RobotThread {
         // print out the current value and it's name
         T_TWEAK.setValue("%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
 
-        drive.setRobotCentric(_robot_centric.value);
         dpad_up.set_debounceDelay(_debounce_delay_ms.value);
         dpad_left.set_debounceDelay(_debounce_delay_ms.value);
         dpad_right.set_debounceDelay(_debounce_delay_ms.value);

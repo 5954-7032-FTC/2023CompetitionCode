@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
 public class LiftClaw extends RobotThread {
 
-    public class LiftClawParameters {
+    public static class LiftClawParameters {
         public Gamepad gamepad = new GamepadEmpty();
         // hardware objects
         public DcMotor DriveMotor;
@@ -25,8 +25,9 @@ public class LiftClaw extends RobotThread {
         public Lights light;
 
         //telemetry items
-        Telemetry.Item T_pos,B_stop,C_STAT,P_GUIDE;
+        //Telemetry.Item T_pos,B_stop,C_STAT,P_GUIDE;
     }
+
     private final Gamepad _gamepad;
     //constants
     final static double _servo_pos_open = 0;
@@ -48,7 +49,6 @@ public class LiftClaw extends RobotThread {
     // hardware objects
     DcMotor _DriveMotor;
     Servo[] _clawServos;
-    //Servo _pipe_guide;
     TouchSensor _bottomStopSensor;
     DistanceSensorDevice _releaseSensor;
     Telemetry _telemetry;
@@ -57,20 +57,6 @@ public class LiftClaw extends RobotThread {
     //telemetry items
     Telemetry.Item _T_pos,_B_stop,_C_STAT,P_GUIDE;
     long _clawOpenTime=0;
-
-
-    //34.75" from bottom to top
-    /*
-    1540 top of 5 stack
-
-
-   cone stack heights
-     1st 0
-     2nd 200
-     3rd 400
-     4th 600
-     5th 800
-     */
 
     public LiftClaw(LiftClawParameters parameters) {
         _light = parameters.light;
@@ -81,30 +67,6 @@ public class LiftClaw extends RobotThread {
         //_pipe_guide = parameters.pipe_guide;
         _bottomStopSensor = parameters.bottomStopSensor;
         _releaseSensor = parameters.releaseSensor;
-    }
-    public LiftClaw(DcMotor Motor, Servo [] servos, TouchSensor stop,
-                    DistanceSensorDevice release, Telemetry telemetry, Gamepad gamepad, Lights light) {
-        _light = light;
-        _gamepad=gamepad;
-        _telemetry = telemetry;
-        _DriveMotor = Motor;
-        _clawServos = new Servo[2];
-        //_pipe_guide = pipe_guide;
-        for (int i = 0; i < servos.length; i++) {
-            servos[i].setDirection(Servo.Direction.FORWARD);
-            _clawServos[i] = servos[i];
-        }
-
-        _C_STAT = telemetry.addData("Claw", "open");
-        clawOpen();
-        clawClose();
-        _bottomStopSensor = stop;
-        _releaseSensor = release;
-        _T_pos = telemetry.addData("Lift", 0);
-        _B_stop = telemetry.addData("BSTOP", _bottomStopSensor.isPressed());
-        _DriveMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        P_GUIDE = _telemetry.addData("PIPE GUIDE", "unknown");
-        //Calibrate();
     }
 
     public void calibrateLift() {
@@ -180,9 +142,6 @@ public class LiftClaw extends RobotThread {
         _DriveMotor.setPower(0);
     }
 
-
-
-
     public void resetEncoder() {
         setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -205,16 +164,16 @@ public class LiftClaw extends RobotThread {
         while (true) {
             current = _DriveMotor.getCurrentPosition();
             if ((System.currentTimeMillis() > start_time + 100) && (current == last)) {
-                _telemetry.log().add("current("+current+") == last("+last+")");
+                //_telemetry.log().add("current("+current+") == last("+last+")");
                 break;
             }
             last = current;
             if (!_DriveMotor.isBusy()) {
-                _telemetry.log().add("motor is not busy");
+                //_telemetry.log().add("motor is not busy");
                 break;
             }
             if (!( _gamepad instanceof GamepadEmpty ) && (Math.abs(_gamepad.left_stick_y) > 0.1)) {
-                _telemetry.log().add("GAMEPAD TRIGGERED A STOP?");
+                //_telemetry.log().add("GAMEPAD TRIGGERED A STOP?");
                 break;
             }
         }

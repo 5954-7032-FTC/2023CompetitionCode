@@ -9,7 +9,6 @@ import org.firstinspires.ftc.teamcode.hardware.ColorSensorDevice;
 import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
 import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
-import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
 import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
 import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
@@ -22,7 +21,7 @@ public abstract class AutoLinearBase extends LinearOpMode {
     protected LiftClaw _liftclaw;
     protected ArmRelease armRelease;
 
-    protected MecanumDriveByGyro _move;
+    protected MecanumDrive _move;
 
 
     protected Lights light;
@@ -64,28 +63,24 @@ public abstract class AutoLinearBase extends LinearOpMode {
         driveParameters._ENCODER_WHEELS = new int[]{0, 1, 2, 3};
         driveParameters._REVERSED_WHEELS = new int[]{2, 3};
         driveParameters.robotCentric = true;
-        driveParameters.imu = robotDevices.imu;
         driveParameters.telemetry = telemetry;
-        _move = new MecanumDriveByGyro(driveParameters);
+        _move = new MecanumDrive(driveParameters);
 
         // setup LiftClaw
-        _liftclaw = new LiftClaw(
-                robotDevices.lift_motor,
-                robotDevices.lift_servos,
-                //robotDevices.pipe_guide,
-                robotDevices.bottom_stop,
-                robotDevices.post_sensor,
-                telemetry,
-                new GamepadEmpty(),
-                light
-        );
+        LiftClaw.LiftClawParameters params = new LiftClaw.LiftClawParameters();
+        params.DriveMotor = robotDevices.lift_motor;
+        params.clawServos = robotDevices.lift_servos;
+        params.gamepad = new GamepadEmpty();
+        params.light = light;
+        params.telemetry = telemetry;
+        params.bottomStopSensor = robotDevices.bottom_stop;
+        params.releaseSensor = robotDevices.post_sensor;
+
+        _liftclaw = new LiftClaw(params);
 
         armRelease = robotDevices.arm_release;
 
         //transitionOnStop();
-
-        _move.resetHeading();
-
 
         waitForStart();
 

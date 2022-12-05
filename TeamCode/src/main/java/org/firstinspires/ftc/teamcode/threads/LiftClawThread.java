@@ -23,7 +23,15 @@ public class LiftClawThread extends RobotThread {
     public LiftClawThread(DcMotor Motor, Servo [] servos, TouchSensor stop, DistanceSensorDevice release,
                           Telemetry telemetry, Gamepad gamepad, Lights light) {
         _gamepad=gamepad;
-        _claw = new LiftClaw(Motor,servos,stop,release,telemetry,gamepad,light);
+        LiftClaw.LiftClawParameters params = new LiftClaw.LiftClawParameters();
+        params.DriveMotor = Motor;
+        params.clawServos = servos;
+        params.bottomStopSensor = stop;
+        params.releaseSensor = release;
+        params.telemetry = telemetry;
+        params.gamepad = gamepad;
+        params.light = light;
+        _claw = new LiftClaw(params);
         _light = light;
         //Calibrate();
     }
