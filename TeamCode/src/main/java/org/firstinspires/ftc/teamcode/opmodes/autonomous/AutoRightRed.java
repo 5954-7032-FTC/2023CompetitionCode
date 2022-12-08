@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.hardware.ColorSensorDevice;
 import org.firstinspires.ftc.teamcode.hardware.LightRed;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
-import org.firstinspires.ftc.teamcode.util.AutoTransitioner;
 
 @Autonomous(name = "Auto-Right-RED")
 public class AutoRightRed extends AutoLinearBase {
@@ -17,11 +16,6 @@ public class AutoRightRed extends AutoLinearBase {
     @Override
     public double turnDirection() {
         return this.RIGHT;
-    }
-
-    @Override
-    public void transitionOnStop() {
-        AutoTransitioner.transitionOnStop(this, "TeleOpRed");
     }
 
     @Override

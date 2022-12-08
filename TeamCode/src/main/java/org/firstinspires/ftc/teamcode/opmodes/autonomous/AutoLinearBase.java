@@ -40,7 +40,6 @@ public abstract class AutoLinearBase extends LinearOpMode {
     public abstract void strafeAntiDirection(double distance);
     public abstract double turnDirection();
     public abstract void lightOn();
-    public abstract void transitionOnStop();
     public abstract int side();
 
     public abstract Lights getLight();
@@ -82,7 +81,6 @@ public abstract class AutoLinearBase extends LinearOpMode {
 
         armRelease = robotDevices.arm_release;
 
-        //transitionOnStop();
 
         _move.resetHeading();
 
@@ -121,20 +119,20 @@ public abstract class AutoLinearBase extends LinearOpMode {
         telemetry.update();
         // now to move around a bit...
         // place the first cone
-        strafeDirection(22.5);
+        strafeDirection(23);
         driveForward(3);
         placeCone(1200);
         driveReverse(3);
 
         // now get a new one.....
-        strafeDirection(10.5);
+        strafeDirection(12);
         //turnRobot(0);
         driveForward(24.5);
 
         pickNextCone();
         // place it on the pole
         driveReverse(25);
-        strafeAntiDirection(10.5);
+        strafeAntiDirection(12);
         driveForward(3);
         placeCone(1200);
         driveReverse(3);
@@ -142,11 +140,11 @@ public abstract class AutoLinearBase extends LinearOpMode {
         switch (place_to_end) {
             case 1:
                 strafeDirection(14);
-                driveReverse(24);
+                driveForward(22);
                 break;
             case 3:
                 strafeDirection(14);
-                driveForward(24);
+                driveReverse(24);
                 break;
         }
         turnRobot(turnDirection());
@@ -180,11 +178,11 @@ public abstract class AutoLinearBase extends LinearOpMode {
         // now get a new one.....
         strafeDirection(13.5);
         //turnRobot(0);
-        driveForward(26);
+        driveForward(26.5);
 
         pickNextCone();
         // place it on the pole
-        driveReverse(26);
+        driveReverse(26.5);
         strafeAntiDirection(13.5);
         driveForward(3);
         placeCone(1200);
@@ -197,7 +195,7 @@ public abstract class AutoLinearBase extends LinearOpMode {
                 break;
             case 3:
                 strafeDirection(14);
-                driveForward(24);
+                driveForward(22);
                 break;
         }
         turnRobot(turnDirection());
