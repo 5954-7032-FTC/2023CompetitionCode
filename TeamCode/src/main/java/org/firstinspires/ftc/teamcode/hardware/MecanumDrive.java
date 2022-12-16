@@ -19,7 +19,6 @@ public class MecanumDrive {
         public double     DRIVE_GEAR_REDUCTION    = 24.0/32.0; //   3/4
         public double     WHEEL_DIAMETER_INCHES   = 96/25.4 ;     // For figuring circumference
         public double  COUNTS_PER_INCH_FORWARD = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
-
         public double ROBOT_DIAMETER_IN = 13;
         public double COUNTS_PER_ROTATE = (ROBOT_DIAMETER_IN * Math.PI)*COUNTS_PER_INCH_FORWARD;
         // These constants define the desired driving/control characteristics
