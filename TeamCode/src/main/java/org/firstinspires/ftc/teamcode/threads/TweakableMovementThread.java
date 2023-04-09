@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.util.motorRampProfile;
-import org.firstinspires.ftc.teamcode.hardware.MecanumDrive;
+import org.firstinspires.ftc.teamcode.hardware.MecanumDrive2023;
 import org.firstinspires.ftc.teamcode.util.Debounce;
 import org.firstinspires.ftc.teamcode.util.Tweakable;
 import org.firstinspires.ftc.teamcode.util.TweakableBoolean;
@@ -72,7 +72,7 @@ public class TweakableMovementThread extends RobotThread {
 
 
 
-    private MecanumDrive drive;
+    private MecanumDrive2023 drive;
 
 
     Debounce dpad_up,dpad_down,dpad_left,dpad_right;
@@ -105,7 +105,7 @@ public class TweakableMovementThread extends RobotThread {
         this._gamepad = gamepad;
         this._telemetry = telemetry;
 
-        MecanumDrive.Parameters driveParameters = new MecanumDrive.Parameters();
+        MecanumDrive2023.Parameters driveParameters = new MecanumDrive2023.Parameters();
         driveParameters.imu = imu;
         driveParameters.telemetry = telemetry;
         driveParameters.motors = motors;
@@ -115,7 +115,7 @@ public class TweakableMovementThread extends RobotThread {
         driveParameters.robotCentric = true;
         driveParameters._SPEED_FACTOR = 1.4;
         driveParameters._ROTATION_RATE = 0.75;
-        drive = new MecanumDrive(driveParameters);
+        drive = new MecanumDrive2023(driveParameters);
 
         _Joy1Y = new motorRampProfile(_ramp_rate.value);
         _Joy1X = new motorRampProfile(_ramp_rate.value);
