@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.hardware.LightRed;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
 
 @Autonomous(name = "Auto-Left-RED")
-public class AutoLeftRed extends AutoLinearBase {
+public class AutoLeftRed extends AutoLinear {
     @Override
     public int side() {
         return LEFT_SIDE;

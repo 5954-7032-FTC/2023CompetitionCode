@@ -5,10 +5,15 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.teamcode.subsystems.PIDNew;
 
 public class MecanumDriveByGyro extends MecanumDrive2023 {
 
-    int [] FORWARD_VALUES, REVERSE_VALUES, LEFT_VALUES, RIGHT_VALUES, ROTATE_VALUES;
+    int [] FORWARD_VALUES, REVERSE_VALUES, LATERAL_LEFT_VALUES, LATERAL_RIGHT_VALUES, ROTATE_VALUES;
 
     double headingOffset;
     double robotHeading;
@@ -17,6 +22,67 @@ public class MecanumDriveByGyro extends MecanumDrive2023 {
     double targetHeading;
     double headingError;
     Telemetry.Item T_RF,T_RR,T_LR,T_LF;
+
+    private Orientation _lastAngles = new Orientation();
+    private double _currentAngle = 0.0;
+
+    private void resetAngle() {
+        _lastAngles = imu.getOrientation();
+        _currentAngle = 0.0;
+    }
+
+    private double getAngle() {
+        Orientation orientation = imu.getOrientation();
+        double deltaAngle = orientation.firstAngle - _lastAngles.firstAngle;
+        if (deltaAngle > 180) deltaAngle -= 360;
+        if (deltaAngle<=-180) deltaAngle += 360;
+
+        _currentAngle += deltaAngle;
+        _lastAngles =  orientation;
+        _telemetry.addData("currentGyroZ", orientation.firstAngle);
+        return _currentAngle;
+    }
+
+    public void turn(double degrees) {
+        resetAngle();
+        double error = degrees;
+        while (Math.abs(error) > 2) {
+            double motorPower = (error<0)?-0.3:0.3;
+            // make it turn!
+            error = degrees - getAngle();
+            _telemetry.addData("error", error);
+        }
+        //stop the motors
+    }
+
+    public void turnTo(double degrees) {
+        Orientation orientation = imu.getOrientation();
+        double error = degrees - orientation.firstAngle;
+        if (error>180) error -=360;
+        if (error<=-180) error +=360;
+        turn(error);
+    }
+
+    public double getAbsoluteAngle() {
+        return imu.getOrientation().firstAngle;
+    }
+
+    public void turnToPID(double degrees) {
+        PIDNew mypid;
+        mypid = new PIDNew(degrees,1,0,0.003) {
+            @Override
+            public double getPTerm(double current) {
+                double error = degrees - current;
+                error = (error%360+360)%360;
+                if (error>1) {
+
+                }
+                return error;
+            }
+        };
+    }
+
+
 
     public MecanumDriveByGyro(Parameters parameters) {
         super(parameters);
@@ -34,8 +100,8 @@ public class MecanumDriveByGyro extends MecanumDrive2023 {
         //motor directions RF, RR, LR, LF, rotate
         FORWARD_VALUES = new int[]{ 1, 1, 1, 1,1};
         REVERSE_VALUES = new int[]{-1, -1, -1, -1,-1};
-        LEFT_VALUES = new int[]{1,-1,1,-1,1};
-        RIGHT_VALUES = new int[]{-1,1,-1,1,1};
+        LATERAL_LEFT_VALUES = new int[]{1,-1,1,-1,1};
+        LATERAL_RIGHT_VALUES = new int[]{-1,1,-1,1,1};
         ROTATE_VALUES = new int[]{1,1,-1,-1};
     }
 
@@ -49,7 +115,7 @@ public class MecanumDriveByGyro extends MecanumDrive2023 {
     }
 
     public void driveLeft(double distance) {
-        driveRobot(distance, LEFT_VALUES);
+        driveRobot(distance, LATERAL_LEFT_VALUES);
     }
 
     public void driveReverse(double distance) {
@@ -57,7 +123,7 @@ public class MecanumDriveByGyro extends MecanumDrive2023 {
     }
 
     public void driveRight(double distance) {
-        driveRobot(distance, RIGHT_VALUES);
+        driveRobot(distance, LATERAL_RIGHT_VALUES);
     }
 
     public void driveRobot(double inches, int [] direction) {
@@ -115,6 +181,8 @@ public class MecanumDriveByGyro extends MecanumDrive2023 {
     }
 
     public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
+        imu.getHeading();
+
         /*
         targetHeading = desiredHeading;  // Save for telemetry
 

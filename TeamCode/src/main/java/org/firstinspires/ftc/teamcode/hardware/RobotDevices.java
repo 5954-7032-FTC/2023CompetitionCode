@@ -5,11 +5,8 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-
-import org.checkerframework.checker.units.qual.A;
 
 
 public class RobotDevices {
@@ -29,13 +26,13 @@ public class RobotDevices {
 
     public ColorSensor cone_detector;
 
-    protected static RobotDevices robot;
+    protected static RobotDevices robotDevices;
 
     public static RobotDevices getDevices(HardwareMap hardwareMap) {
-        if (robot == null ) {
-            robot = new RobotDevices(hardwareMap);
+        if (robotDevices == null ) {
+            robotDevices = new RobotDevices(hardwareMap);
         }
-        return robot;
+        return robotDevices;
     }
 
     private RobotDevices(HardwareMap hardwareMap) {

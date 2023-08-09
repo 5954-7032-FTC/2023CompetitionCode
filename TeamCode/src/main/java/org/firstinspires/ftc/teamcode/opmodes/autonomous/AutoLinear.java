@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
 import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
 import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
 
-public abstract class AutoLinearBase extends LinearOpMode {
+public abstract class AutoLinear extends LinearOpMode {
 
     protected static final int HOLD_TIME = 1;
     protected int current_stack_height=LiftClaw.STACK_TOP_PICKUP;

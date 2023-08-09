@@ -103,7 +103,7 @@ public class VuforiaFieldNavigationWebcam extends RobotThread {
 
 
 
-    @Override public void init() {
+    public void init() {
         // Connect to the camera we are to use.  This name must match what is set up in Robot Configuration
         webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -229,6 +229,10 @@ public class VuforiaFieldNavigationWebcam extends RobotThread {
 
         // Disable Tracking when we are done;
         targets.deactivate();
+    }
+
+    private boolean isStopRequested() {
+        return false;
     }
 
     /***

@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.hardware.Lights;
 
 //threaded tele op controller......
 @TeleOp(name = "TeleOp-Red")
-public class ThreadedTeleOpRed extends ThreadedTeleOpBase {
+public class ThreadedTeleOpRed extends ThreadedTeleOp {
     @Override
     public Lights getLights() {
         return new LightRed(hardwareMap.dcMotor.get("LIGHTS"));

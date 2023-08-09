@@ -2,13 +2,8 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
 import org.firstinspires.ftc.teamcode.hardware.DistanceSensorDevice;
 import org.firstinspires.ftc.teamcode.hardware.Lights;
@@ -18,7 +13,7 @@ import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
 
 //threaded tele op controller......
-public abstract class ThreadedTeleOpBase extends OpMode {
+public abstract class ThreadedTeleOp extends OpMode {
 
     TweakableMovementThread _move;
     LiftClawThread _liftclaw;

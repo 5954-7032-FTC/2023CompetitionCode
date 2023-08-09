@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.hardware.Lights;
  * This is the threaded Tele Opmode with blue lights
  * @author Greg Weaver
  */
-public class ThreadedTeleOpBlue extends ThreadedTeleOpBase{
+public class ThreadedTeleOpBlue extends ThreadedTeleOp {
 
     @Override
     public Lights getLights() {
