@@ -6,8 +6,9 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveImpl;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveParameters;
 import org.firstinspires.ftc.teamcode.util.motorRampProfile;
-import org.firstinspires.ftc.teamcode.hardware.MecanumDrive2023;
 import org.firstinspires.ftc.teamcode.util.Debounce;
 import org.firstinspires.ftc.teamcode.util.Tweakable;
 import org.firstinspires.ftc.teamcode.util.TweakableBoolean;
@@ -27,7 +28,9 @@ public class TweakableMovementThread extends RobotThread {
     TweakableDouble _zone_lateral = new TweakableDouble("LateralZone",0.02, 0.2);
     TweakableDouble _zone_forward =new TweakableDouble("ForwardZone", 0.02, 0.2 );
     TweakableDouble _zone_rotation =new TweakableDouble("RotateZone", 0.02, 0.1);
-    TweakableDouble _ramp_rate =  new TweakableDouble("RampRate", 0.02, 1.5);
+    TweakableDouble _ramp_rate_J1X =  new TweakableDouble("RampRateJ1X", 0.02, 1.5);
+    TweakableDouble _ramp_rate_J1Y =  new TweakableDouble("RampRateJ1Y", 0.02, 1.5);
+    TweakableDouble _ramp_rate_J2X =  new TweakableDouble("RampRateJ2X", 0.02, 1.5);
     TweakableBoolean _robot_centric = new TweakableBoolean("RobotCentricDrive", true);
     TweakableDouble _fine_control = new TweakableDouble("FineControl", 0.05,0.55);
     TweakableLong _debounce_delay_ms = new TweakableLong("Button Debounce Delay", 20, 150);
@@ -42,7 +45,9 @@ public class TweakableMovementThread extends RobotThread {
                 _zone_forward.value = Double.parseDouble(props.getProperty("_zone_forward"));
                 _zone_lateral.value =Double.parseDouble(props.getProperty("_zone_lateral"));
                 _zone_rotation.value = Double.parseDouble(props.getProperty("_zone_rotation"));
-                _ramp_rate.value = Double.parseDouble(props.getProperty("_ramp_rate"));
+                _ramp_rate_J1X.value = Double.parseDouble(props.getProperty("_ramp_rate_J1X"));
+                _ramp_rate_J1Y.value = Double.parseDouble(props.getProperty("_ramp_rate_J1Y"));
+                _ramp_rate_J2X.value = Double.parseDouble(props.getProperty("_ramp_rate_J2X"));
                 _robot_centric.value = Boolean.parseBoolean(props.getProperty("_robot_centric"));
                 _fine_control.value  = Double.parseDouble(props.getProperty("_fine_control"));
             } catch (Exception ex) {
@@ -57,7 +62,9 @@ public class TweakableMovementThread extends RobotThread {
                 props.setProperty("_zone_forward", _zone_forward.toString());
                 props.setProperty("_zone_lateral", _zone_lateral.toString());
                 props.setProperty("_zone_rotation", _zone_rotation.toString());
-                props.setProperty("_ramp_rate", _ramp_rate.toString());
+                props.setProperty("_ramp_rate_J1X", _ramp_rate_J1X.toString());
+                props.setProperty("_ramp_rate_J1Y", _ramp_rate_J1Y.toString());
+                props.setProperty("_ramp_rate_J2X", _ramp_rate_J2X.toString());
                 props.setProperty("_robot_centric", _robot_centric.toString());
                 props.setProperty("_fine_control ", _fine_control.toString());
                 FileWriter writer = new FileWriter(AppUtil.getInstance().getSettingsFile(config));
@@ -72,7 +79,7 @@ public class TweakableMovementThread extends RobotThread {
 
 
 
-    private MecanumDrive2023 drive;
+    private MecanumDriveImpl drive;
 
 
     Debounce dpad_up,dpad_down,dpad_left,dpad_right;
@@ -91,10 +98,6 @@ public class TweakableMovementThread extends RobotThread {
 
     private boolean includeTweaks=true;
 
-    public TweakableMovementThread(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry, BNO055IMU imu, long debounceDelayms) {
-        this.init(gamepad, motors, telemetry, imu,debounceDelayms);
-    }
-
 
     public TweakableMovementThread(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry, BNO055IMU imu, long debounceDelayms, boolean includeTweaks) {
         this.includeTweaks= includeTweaks;
@@ -105,21 +108,18 @@ public class TweakableMovementThread extends RobotThread {
         this._gamepad = gamepad;
         this._telemetry = telemetry;
 
-        MecanumDrive2023.Parameters driveParameters = new MecanumDrive2023.Parameters();
-        driveParameters.imu = imu;
+        MecanumDriveParameters driveParameters = new MecanumDriveParameters();
+        //riveParameters.imu = imu;
         driveParameters.telemetry = telemetry;
         driveParameters.motors = motors;
-        driveParameters._ENCODER_WHEELS = new int[]{};
-        driveParameters._FREE_WHEELS = new int[]{0, 1, 2, 3};
-        driveParameters._REVERSED_WHEELS = new int[]{2, 3};
-        driveParameters.robotCentric = true;
-        driveParameters._SPEED_FACTOR = 1.4;
-        driveParameters._ROTATION_RATE = 0.75;
-        drive = new MecanumDrive2023(driveParameters);
+        driveParameters.ENCODER_WHEELS = new int[]{};
+        driveParameters.FREE_WHEELS = new int[]{0, 1, 2, 3};
+        driveParameters.REVERSED_WHEELS = new int[]{2, 3};
+        drive = new MecanumDriveImpl(driveParameters);
 
-        _Joy1Y = new motorRampProfile(_ramp_rate.value);
-        _Joy1X = new motorRampProfile(_ramp_rate.value);
-        _Joy2X = new motorRampProfile(_ramp_rate.value);
+        _Joy1Y = new motorRampProfile(_ramp_rate_J1X.value);
+        _Joy1X = new motorRampProfile(_ramp_rate_J1Y.value);
+        _Joy2X = new motorRampProfile(_ramp_rate_J2X.value);
 
         if (includeTweaks) init_tweaks(debounceDelayms);
     }
@@ -135,7 +135,9 @@ public class TweakableMovementThread extends RobotThread {
                     _zone_lateral,
                     _zone_forward,
                     _zone_rotation,
-                    _ramp_rate,
+                    _ramp_rate_J1X,
+                    _ramp_rate_J1Y,
+                    _ramp_rate_J2X,
                     _robot_centric,
                     _fine_control,
                     _debounce_delay_ms,
@@ -168,12 +170,15 @@ public class TweakableMovementThread extends RobotThread {
         // print out the current value and it's name
         T_TWEAK.setValue("%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
 
-        drive.setRobotCentric(_robot_centric.value);
+        //drive.setRobotCentric(_robot_centric.value);
         dpad_up.set_debounceDelay(_debounce_delay_ms.value);
         dpad_left.set_debounceDelay(_debounce_delay_ms.value);
         dpad_right.set_debounceDelay(_debounce_delay_ms.value);
         dpad_down.set_debounceDelay(_debounce_delay_ms.value);
-        drive.setSpeedFactor(speed_factor.value);
+        _Joy1X.setRampRate(_ramp_rate_J1X.value);
+        _Joy2X.setRampRate(_ramp_rate_J1Y.value);
+        _Joy1Y.setRampRate(_ramp_rate_J2X.value);
+        //drive.setSpeedFactor(speed_factor.value);
     }
 
     public void run() {

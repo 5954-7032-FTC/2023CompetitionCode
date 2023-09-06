@@ -1,10 +1,12 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.util.Range;
 
-public class LineFollowerSensors {
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
+
+public class LineFollowerSensors implements SubSystem {
 
     NormalizedColorSensor [] line_sensors;
 

@@ -2,8 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.hardware.LightBlue;
-import org.firstinspires.ftc.teamcode.hardware.Lights;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.Lights;
 
 
 //threaded tele op controller......
@@ -17,6 +16,11 @@ public class ThreadedTeleOpBlue extends ThreadedTeleOp {
 
     @Override
     public Lights getLights() {
-        return new LightBlue(hardwareMap.dcMotor.get("LIGHTS"));
+        return new Lights(hardwareMap.dcMotor.get("LIGHTS")){
+            @Override
+            public void on() {
+                blueOn();
+            }
+        };
     }
 }

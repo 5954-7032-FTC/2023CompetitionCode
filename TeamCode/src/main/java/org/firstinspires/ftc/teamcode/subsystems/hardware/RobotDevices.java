@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 
 
 public class RobotDevices {
-    //public LineFollowerSensors lineFollowers;
+
     public ColorSensor colorSensorLeft,colorSensorRight;
     public DcMotor [] wheels;
     public Servo[] lift_servos;
@@ -18,13 +18,11 @@ public class RobotDevices {
     public DcMotor lift_motor;
     public TouchSensor bottom_stop;
     public DistanceSensorDevice post_sensor;//,bottom_cone;
-    //public Servo pipe_guide;
-    //public Servo arm_release;
+
     public ArmRelease arm_release;
 
-    //public NormalizedColorSensor [] lineFollowers;
 
-    public ColorSensor cone_detector;
+   // public ColorSensor cone_detector;
 
     protected static RobotDevices robotDevices;
 

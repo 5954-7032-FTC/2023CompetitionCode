@@ -1,19 +1,23 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
-import org.firstinspires.ftc.teamcode.hardware.ColorSensorDevice;
-import org.firstinspires.ftc.teamcode.hardware.LiftClaw;
-import org.firstinspires.ftc.teamcode.hardware.Lights;
-import org.firstinspires.ftc.teamcode.hardware.MecanumDrive2023;
-import org.firstinspires.ftc.teamcode.hardware.MecanumDriveByGyro;
-import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
-import org.firstinspires.ftc.teamcode.util.GamepadEmpty;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.ColorSensorDevice;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.ImuDevice;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.LiftClaw;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.Lights;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveByGyro;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveParameters;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.RobotDevices;
 
-public abstract class AutoLinear extends LinearOpMode {
+@Autonomous(
+        name = "Autonomous Mode"
+)
+public class AutoLinear extends LinearOpMode {
 
-    protected static final int HOLD_TIME = 1;
     protected int current_stack_height=LiftClaw.STACK_TOP_PICKUP;
 
     protected RobotDevices robotDevices;
@@ -33,37 +37,76 @@ public abstract class AutoLinear extends LinearOpMode {
     protected ColorSensorDevice colorSensorDeviceLeft, colorSensorDeviceRight;
 
 
-    public abstract ColorSensorDevice getColorSensorDevice();
-    public abstract void strafeDirection(double distance);
-    public abstract void strafeAntiDirection(double distance);
-    public abstract double turnDirection();
-    public abstract void lightOn();
-    public abstract int side();
+    public ColorSensorDevice getColorSensorDevice() {
+        if (left)
+            return colorSensorDeviceRight;
+        else
+            return colorSensorDeviceLeft;
+    };
 
-    public abstract Lights getLight();
+    public void strafeDirection(double distance) {
+        if (left) {
+            driveRight(distance);
+        }
+        else {
+            driveLeft(distance);
+        }
+    }
+    public void strafeAntiDirection(double distance) {
+        if (left) {
+            driveLeft(distance);
+        }
+        else {
+            driveRight(distance);
+        }
+    };
+    public double turnDirection() {
+        if (left)
+            return this.LEFT;
+        else
+            return this.RIGHT;
+    }
+
+    public int side() {
+        if (left)
+            return LEFT_SIDE;
+        else
+            return RIGHT_SIDE;
+    };
+
+    boolean blue = false;
+    boolean left = false;
+
 
     @Override
     public void runOpMode() throws InterruptedException {
         telemetry.setAutoClear(false);
 
+        getOptions();
+
         robotDevices = RobotDevices.getDevices(hardwareMap);
 
-
-        light = getLight();// new Lights(hardwareMap.dcMotor.get("LIGHTS"));
+        light = new Lights(hardwareMap.dcMotor.get("LIGHTS")){
+            @Override
+            public void on() {
+                if (blue)
+                    blueOn();
+                else
+                    redOn();
+            }
+        };
 
         // set up MovementThread
 
         colorSensorDeviceLeft = new ColorSensorDevice(robotDevices.colorSensorLeft);
         colorSensorDeviceRight = new ColorSensorDevice(robotDevices.colorSensorRight);
 
-        MecanumDrive2023.Parameters driveParameters = new MecanumDrive2023.Parameters();
+        MecanumDriveParameters driveParameters = new MecanumDriveParameters();
         driveParameters.motors = robotDevices.wheels;
-        driveParameters._ENCODER_WHEELS = new int[]{0, 1, 2, 3};
-        driveParameters._REVERSED_WHEELS = new int[]{2, 3};
-        driveParameters.robotCentric = true;
-        driveParameters.imu = robotDevices.imu;
+        driveParameters.ENCODER_WHEELS = new int[]{0, 1, 2, 3};
+        driveParameters.REVERSED_WHEELS = new int[]{2, 3};
         driveParameters.telemetry = telemetry;
-        _move = new MecanumDriveByGyro(driveParameters);
+        _move = new MecanumDriveByGyro(driveParameters, new ImuDevice(robotDevices.imu));
 
         // setup LiftClaw
         _liftclaw = new LiftClaw(
@@ -73,7 +116,7 @@ public abstract class AutoLinear extends LinearOpMode {
                 robotDevices.bottom_stop,
                 robotDevices.post_sensor,
                 telemetry,
-                new GamepadEmpty(),
+                //new GamepadEmpty(),
                 light
         );
 
@@ -85,20 +128,90 @@ public abstract class AutoLinear extends LinearOpMode {
 
         waitForStart();
 
-        lightOn();
+        light.on();
 
         // start moving the bot.
 
-        switch (side()) {
-            case LEFT_SIDE:
-                runLeft();
-                break;
-            case RIGHT_SIDE:
-                runRight();
-                break;
+        // right and left seemed to function differently.
+        if (left) {
+            runLeft();
+        }
+        else {
+            runRight();
         }
     }
 
+    public void getOptions() {
+
+
+        String first_query = "Press X for Blue or B for Red";
+        String second_query = "Press X for Left and B for Right";
+        String double_check = "Press Y to confirm and A to repick";
+        boolean RVB = false;
+        boolean LVR = false;
+        Telemetry.Item Query = telemetry.addData("","");
+        //wait for keypad press on gamepad1
+        while (!(LVR && RVB)) {
+
+            if (!RVB) {
+                Query.setValue(first_query);
+                while (true) {
+                    if (gamepad1.x) {
+                        blue = true;
+                        break;
+                    } else if (gamepad1.b) {
+                        blue = false;
+                        break;
+                    }
+                }
+                Query.setValue(double_check);
+                while (true) {
+                    if (gamepad1.a) {
+                        break;
+                    }
+                    if (gamepad1.y) {
+                        RVB = true;
+                        break;
+                    }
+                }
+             }
+            if (! LVR) {
+                Query.setValue(second_query);
+                while (true) {
+                    if (gamepad1.x) {
+                        left = true;
+                        break;
+                    } else if (gamepad1.b) {
+                        left = false;
+                        break;
+                    }
+                }
+                Query.setValue(double_check);
+                while (true) {
+                    if (gamepad1.a) {
+                        break;
+                    }
+                    if (gamepad1.y) {
+                        LVR = true;
+                        break;
+                    }
+                }
+            }
+
+            Query.setValue("So we are " +(blue?"Blue":"Red") + " - " +(left?"Left":"Right") + "? - Y to confirm, A to cancel!");
+            while (true) {
+                if (gamepad1.a) {
+                    LVR=false;
+                    RVB=false;
+                    break;
+                }
+                if (gamepad1.y) {
+                    break;
+                }
+            }
+
+        }
+    }
     public void runLeft() throws InterruptedException {
         // first put the arm up.
         armRelease.release();
@@ -106,8 +219,6 @@ public abstract class AutoLinear extends LinearOpMode {
         Thread.sleep(1500);
         _liftclaw.runToPos(LiftClaw.LOW_POS);
 
-        double forward_amount=0,
-                strafe_amount=0;
 
         // move to the cone
         strafeDirection(22); // should put us clearly on the cone
@@ -146,7 +257,7 @@ public abstract class AutoLinear extends LinearOpMode {
                 break;
         }
         turnRobot(turnDirection());
-        lightOff();
+        light.off();
         requestOpModeStop();
     }
 
@@ -157,8 +268,6 @@ public abstract class AutoLinear extends LinearOpMode {
         Thread.sleep(1500);
         _liftclaw.runToPos(LiftClaw.LOW_POS);
 
-        double forward_amount=0,
-                strafe_amount=0;
 
         // move to the cone
         strafeDirection(22); // should put us clearly on the cone
@@ -197,7 +306,7 @@ public abstract class AutoLinear extends LinearOpMode {
                 break;
         }
         turnRobot(turnDirection());
-        lightOff();
+        light.off();
         requestOpModeStop();
     }
 
@@ -217,9 +326,6 @@ public abstract class AutoLinear extends LinearOpMode {
         _move.driveRight(distanceInches);
     }
 
-    public void lightOff() {
-        light.off();
-    }
 
     public void pickNextCone() {
         _liftclaw.clawClose();
@@ -230,15 +336,10 @@ public abstract class AutoLinear extends LinearOpMode {
 
     public void placeCone(long pos) {
         _liftclaw.clawOpen();
-        /*
-        _liftclaw.placeCone();
-        _liftclaw.clawOpen();
-        _liftclaw.runToPos(LiftClaw.LOW_POS);
-         */
     }
 
     public void turnRobot(double direction) {
-        //_move.turnRobot(direction,HOLD_TIME);
+
     }
 
     public void updateStackHeight() {

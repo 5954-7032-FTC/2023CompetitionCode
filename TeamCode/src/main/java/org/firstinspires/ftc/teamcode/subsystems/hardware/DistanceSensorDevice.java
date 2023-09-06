@@ -1,10 +1,11 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
 
-public class DistanceSensorDevice {
+public class DistanceSensorDevice implements SubSystem {
     DistanceSensor device;
 
     public DistanceSensorDevice(DistanceSensor device) {

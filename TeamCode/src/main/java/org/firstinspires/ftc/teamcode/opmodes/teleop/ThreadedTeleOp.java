@@ -4,10 +4,9 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.hardware.ArmRelease;
-import org.firstinspires.ftc.teamcode.hardware.DistanceSensorDevice;
-import org.firstinspires.ftc.teamcode.hardware.Lights;
-import org.firstinspires.ftc.teamcode.hardware.RobotDevices;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.ArmRelease;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.Lights;
+import org.firstinspires.ftc.teamcode.subsystems.hardware.RobotDevices;
 import org.firstinspires.ftc.teamcode.threads.LiftClawThread;
 import org.firstinspires.ftc.teamcode.threads.TweakableMovementThread;
 
@@ -24,23 +23,12 @@ public abstract class ThreadedTeleOp extends OpMode {
     private BNO055IMU imu         = null;
     RobotDevices robotDevices;
 
-    DistanceSensorDevice bottom_cone;
-
     @Override
     public void init() {
         telemetry.setAutoClear(false);
 
         robotDevices =  RobotDevices.getDevices(hardwareMap);
-        // set up MovementThread
-        /*
-        final DcMotor [] motors = {
-                hardwareMap.dcMotor.get("D_FR"),
-                hardwareMap.dcMotor.get("D_RR"),
-                hardwareMap.dcMotor.get("D_RL"),
-                hardwareMap.dcMotor.get("D_FL")};
-         */
 
-        //bottom_cone = robotDevices.bottom_cone;
         imu = robotDevices.imu;
 
         _move = new TweakableMovementThread(gamepad1, robotDevices.wheels, telemetry, imu, 500, false);

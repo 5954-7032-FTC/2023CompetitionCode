@@ -27,11 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -44,8 +41,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
 import org.firstinspires.ftc.teamcode.threads.RobotThread;
-import org.firstinspires.ftc.teamcode.util.VuforiaKey;
+import org.firstinspires.ftc.teamcode.util.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +53,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XZY;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 
-public class VuforiaFieldNavigationWebcam extends RobotThread {
+public class VuforiaFieldNavigationWebcam extends RobotThread implements SubSystem {
 
     private Telemetry telemetry;
     private HardwareMap hardwareMap;
@@ -108,7 +106,7 @@ public class VuforiaFieldNavigationWebcam extends RobotThread {
         webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
-        parameters.vuforiaLicenseKey = VuforiaKey.Key;
+        parameters.vuforiaLicenseKey = Constants.VuforiaKey;
         parameters.cameraName = webcamName;
         parameters.useExtendedTracking = false;
         vuforia = ClassFactory.getInstance().createVuforia(parameters);

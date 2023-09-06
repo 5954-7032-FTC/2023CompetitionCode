@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-public abstract class Lights {
+public abstract class Lights implements SubSystem {
 
     DcMotor lights;
     private static final long blink_min=1200; //1 second minimum blink time so no more than once every 1.2 seconds.

@@ -1,7 +1,9 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
-public class ColorSensorDevice {
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
+
+public class ColorSensorDevice implements SubSystem {
     public static final int RED   = 1;
     public static final int GREEN = 2;
     public static final int BLUE  = 3;
@@ -43,5 +45,4 @@ public class ColorSensorDevice {
         else if (blue > green) return BLUE;
         else return GREEN;
     }
-
-    }
+}

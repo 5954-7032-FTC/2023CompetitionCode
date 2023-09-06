@@ -1,10 +1,11 @@
-package org.firstinspires.ftc.teamcode.hardware;
+package org.firstinspires.ftc.teamcode.subsystems.hardware;
 
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.subsystems.SubSystem;
 import org.firstinspires.ftc.teamcode.util.Constants;
 
-public class ArmRelease {
+public class ArmRelease implements SubSystem {
     private final Servo _arm_release;
 
     public ArmRelease(Servo arm_release) {

@@ -86,7 +86,7 @@ public abstract class PID {
     protected abstract double getInput();
 
     /********************************
-     * Required to be able to reset the value of sensor to zero when PID_greg tries to reset.
+     * Required to be able to reset the value of sensor to zero when PID tries to reset.
      */
     protected abstract void resetInput();
 
