@@ -41,8 +41,8 @@ public class RobotDevices {
     private RobotDevices(HardwareMap hardwareMap) {
 
 
-        colorSensorRight = hardwareMap.colorSensor.get("RIGHT_COLOR");
-        colorSensorLeft = hardwareMap.colorSensor.get("LEFT_COLOR");
+        //colorSensorRight = hardwareMap.colorSensor.get("RIGHT_COLOR");
+        //colorSensorLeft = hardwareMap.colorSensor.get("LEFT_COLOR");
         wheels = new DcMotor[]{
                 hardwareMap.dcMotor.get("D_FR"),
                 hardwareMap.dcMotor.get("D_RR"),
@@ -50,13 +50,14 @@ public class RobotDevices {
                 hardwareMap.dcMotor.get("D_FL")
         };
         imu = hardwareMap.get(BNO055IMU.class, "imu");
-        lift_motor = hardwareMap.dcMotor.get("LIFT");
-        lift_servos = new Servo[]{
+        ///lift_motor = hardwareMap.dcMotor.get("LIFT");
+        /* lift_servos = new Servo[]{
                 hardwareMap.servo.get("CLAW0"),
                 hardwareMap.servo.get("CLAW1")
         };
-        bottom_stop = hardwareMap.touchSensor.get("BSTOP");
-        post_sensor = new DistanceSensorDevice(hardwareMap.get(DistanceSensor.class, "C_STOP"));
-        arm_release = new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
+    */
+        ////bottom_stop = hardwareMap.touchSensor.get("BSTOP");
+        ////post_sensor = new DistanceSensorDevice(hardwareMap.get(DistanceSensor.class, "C_STOP"));
+        //arm_release = new ArmRelease(hardwareMap.servo.get("ARM_RELEASE"));
     }
 }

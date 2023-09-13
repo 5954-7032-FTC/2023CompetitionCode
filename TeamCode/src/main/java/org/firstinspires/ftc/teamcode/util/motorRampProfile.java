@@ -9,6 +9,12 @@ public class motorRampProfile {
     double prevSign = 0;
     double rampRate;
 
+    //used for testing
+    public motorRampProfile( double rampRate, ElapsedTime timer) {
+        rampTimer = timer;
+        this.rampRate = rampRate;
+    }
+
     public void setRampRate(double rampRate) {
         this.rampRate = rampRate;
     }
