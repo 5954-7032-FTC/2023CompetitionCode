@@ -4,39 +4,45 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class motorRampProfile {
     ElapsedTime rampTimer = new ElapsedTime();
-    double _currentPoint = 0;
-    double _previousTime = 0;
-    double _previousSign = 0;
-    double _rampRate;
+    double curPoint = 0;
+    double prevT = 0;
+    double prevSign = 0;
+    double rampRate;
 
-    public void setRampRate(double _rampRate) {
-        this._rampRate = _rampRate;
+    //used for testing
+    public motorRampProfile( double rampRate, ElapsedTime timer) {
+        rampTimer = timer;
+        this.rampRate = rampRate;
+    }
+
+    public void setRampRate(double rampRate) {
+        this.rampRate = rampRate;
     }
 
     public double getRampRate() {
-        return _rampRate;
+        return rampRate;
     }
 
     public motorRampProfile(double rampRate){
-        this._rampRate = rampRate;
+        this.rampRate = rampRate;
     }
 
     public double ramp(double input){
-        double currentTime = rampTimer.seconds();
-        double inputSign = Math.signum(input);
-        double nextPoint = (Math.abs(_currentPoint) + this._rampRate * (currentTime - _previousTime));
-        if (_previousSign != inputSign && _previousSign !=0){
-            _currentPoint = 0;
+        double curTime = rampTimer.seconds();
+        double curSign = Math.signum(input);
+        double nextPoint = (Math.abs(curPoint) + this.rampRate * (curTime - prevT));
+        if (prevSign != curSign && prevSign !=0){
+            curPoint = 0;
         }
         else if (Math.abs(input) - Math.abs(nextPoint) > 0){
-            _currentPoint = inputSign * nextPoint;
+            curPoint = curSign * nextPoint;
         }
         else{
-            _currentPoint = input;
+            curPoint = input;
         }
-        _previousSign = inputSign;
-        _previousTime = currentTime;
-        return _currentPoint;
+        prevSign = curSign;
+        prevT = curTime;
+        return curPoint;
     }
 
 }

@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveImpl;
 import org.firstinspires.ftc.teamcode.subsystems.hardware.MecanumDriveParameters;
 import org.firstinspires.ftc.teamcode.util.motorRampProfile;
+
 import org.firstinspires.ftc.teamcode.util.Debounce;
 import org.firstinspires.ftc.teamcode.util.Tweakable;
 import org.firstinspires.ftc.teamcode.util.TweakableBoolean;
@@ -99,6 +100,7 @@ public class TweakableMovementThread extends RobotThread {
     private boolean includeTweaks=true;
 
 
+
     public TweakableMovementThread(Gamepad gamepad, DcMotor[] motors, Telemetry telemetry, BNO055IMU imu, long debounceDelayms, boolean includeTweaks) {
         this.includeTweaks= includeTweaks;
         this.init(gamepad, motors, telemetry, imu,debounceDelayms);
@@ -121,6 +123,7 @@ public class TweakableMovementThread extends RobotThread {
         _Joy1X = new motorRampProfile(_ramp_rate_J1Y.value);
         _Joy2X = new motorRampProfile(_ramp_rate_J2X.value);
 
+
         if (includeTweaks) init_tweaks(debounceDelayms);
     }
 
@@ -138,6 +141,7 @@ public class TweakableMovementThread extends RobotThread {
                     _ramp_rate_J1X,
                     _ramp_rate_J1Y,
                     _ramp_rate_J2X,
+
                     _robot_centric,
                     _fine_control,
                     _debounce_delay_ms,
@@ -171,6 +175,7 @@ public class TweakableMovementThread extends RobotThread {
         T_TWEAK.setValue("%s", tweakables[current_tweakable].name + " - " + tweakables[current_tweakable].toString());
 
         //drive.setRobotCentric(_robot_centric.value);
+
         dpad_up.set_debounceDelay(_debounce_delay_ms.value);
         dpad_left.set_debounceDelay(_debounce_delay_ms.value);
         dpad_right.set_debounceDelay(_debounce_delay_ms.value);

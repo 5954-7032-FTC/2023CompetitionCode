@@ -6,6 +6,7 @@ import org.firstinspires.ftc.teamcode.subsystems.hardware.DistanceSensorDevice;
 import org.firstinspires.ftc.teamcode.subsystems.hardware.LiftClaw;
 import org.firstinspires.ftc.teamcode.subsystems.hardware.Lights;
 
+
 public class LiftClawThread extends RobotThread {
     private final Gamepad _gamepad;
 
@@ -19,6 +20,7 @@ public class LiftClawThread extends RobotThread {
         _gamepad=gamepad;
         _claw = new LiftClaw(Motor,servos,stop,release,telemetry,light);
         _light = light;
+
     }
 
     public void run() {
@@ -53,6 +55,7 @@ public class LiftClawThread extends RobotThread {
             if (Math.abs(_gamepad.left_stick_y) > 0.1) {
                 _claw.triggerStop();
             }
+
         }
     }
 }

@@ -24,11 +24,11 @@ public class TweakableDouble extends Tweakable {
 
     @Override
     public void adjustDown() {
-        value += _change_amount;
+        value -= _change_amount;
     }
 
     @Override
     public void adjustUp() {
-        value -=_change_amount;
+        value +=_change_amount;
     }
 }
